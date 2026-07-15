@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-
+ 
 const STEPS = [
   { key: 'pending', label: 'รอตรวจสอบ' },
   { key: 'confirmed', label: 'ยืนยันแล้ว' },

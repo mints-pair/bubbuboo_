@@ -13,13 +13,17 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [pendingCount, setPendingCount] = useState(0);
   const [shipCount, setShipCount] = useState(0);
   const [adminEmail, setAdminEmail] = useState('');
+  const [adminName, setAdminName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (pathname === '/admin/login') return;
     loadCounts();
-    supabase.auth.getUser().then(({ data: { user } }) => setAdminEmail(user?.email || ''));
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setAdminEmail(user?.email || '');
+      setAdminName(user?.user_metadata?.full_name || '');
+    });
   }, [pathname]);
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             className="btn btn-outline"
             style={{ display: 'flex', alignItems: 'center', gap: 6 }}
           >
-            {adminEmail || '...'} <span style={{ fontSize: 10 }}>▾</span>
+            {adminName || adminEmail || '...'} <span style={{ fontSize: 10 }}>▾</span>
           </button>
           {menuOpen && (
             <div style={{

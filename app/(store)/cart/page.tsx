@@ -41,7 +41,7 @@ export default function CartPage() {
   const total = subtotal + shippingFee;
 
   async function goToPayment() {
-    if (!contact.name || !contact.address || !contact.phone) {
+    if (!contact.xAccount || !contact.name || !contact.address || !contact.phone) {
       setError(t('cart.errorFillAll'));
       return;
     }
@@ -130,14 +130,14 @@ export default function CartPage() {
 
           <div className="card">
             <h3>{t('cart.contactSectionTitle')}</h3>
-            <div className="field"><label>{t('cart.xAccountLabel')}</label>
-              <input value={contact.xAccount} onChange={(e) => setContact({ ...contact, xAccount: e.target.value })} placeholder="@your_account" /></div>
-            <div className="field"><label>{t('cart.nameLabel')}</label>
-              <input value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
-            <div className="field"><label>{t('cart.addressLabel')}</label>
-              <textarea rows={3} value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} /></div>
-            <div className="field"><label>{t('cart.phoneLabel')}</label>
-              <input value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
+            <div className="field"><label>{t('cart.xAccountLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.xAccount} onChange={(e) => setContact({ ...contact, xAccount: e.target.value })} placeholder="@your_account" /></div>
+            <div className="field"><label>{t('cart.nameLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
+            <div className="field"><label>{t('cart.addressLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <textarea required rows={3} value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} /></div>
+            <div className="field"><label>{t('cart.phoneLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
             <button className="btn btn-primary" onClick={goToPayment}>{t('cart.proceedToPayment')}</button>
           </div>
@@ -151,19 +151,26 @@ export default function CartPage() {
             <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 10 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
             <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>
               {settings?.qr_image_url ? (
-                <img src={settings.qr_image_url} style={{ width: 200, height: 200, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 10 }} />
+                <a href={settings.qr_image_url} target="_blank" rel="noopener">
+                  <img src={settings.qr_image_url} style={{ width: 200, height: 200, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 10, cursor: 'zoom-in' }} />
+                </a>
               ) : (
                 <p>{t('cart.qrNotSet')}</p>
               )}
             </div>
-            {settings?.qr_image_url && <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.qrCaption')}</p>}
+            {settings?.qr_image_url && (
+              <>
+                <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.qrCaption')}</p>
+                <p style={{ fontSize: 12, color: 'var(--jade)', textAlign: 'center', marginTop: 4 }}>{t('cart.qrTapHint')}</p>
+              </>
+            )}
             <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.altPaymentNote')}</p>
           </div>
           <div className="card">
-            <h3>{t('cart.attachSlipTitle')}</h3>
-            <div className="field"><input type="file" accept="image/*" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} /></div>
-            <div className="field"><label>{t('cart.trackingCodeLabel')}</label>
-              <input maxLength={6} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="เช่น 482913" /></div>
+            <h3>{t('cart.attachSlipTitle')} <span style={{ color: 'var(--rose)', fontSize: 14 }}>*</span></h3>
+            <div className="field"><input required type="file" accept="image/*" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} /></div>
+            <div className="field"><label>{t('cart.trackingCodeLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required maxLength={6} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="เช่น 482913" /></div>
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
             <button className="btn btn-primary" disabled={submitting} onClick={submitPayment}>
               {submitting ? t('cart.submitting') : t('cart.confirmPayment')}

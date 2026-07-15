@@ -1,6 +1,7 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import { LangProvider } from '@/lib/lang-context';
+import IdleLogout from '@/components/IdleLogout';
 
 export const metadata = {
   title: 'ร้านค้า',
@@ -18,7 +19,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <LangProvider>{children}</LangProvider>
+        <LangProvider>
+          <IdleLogout />
+          {children}
+        </LangProvider>
       </body>
     </html>
   );

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function PendingConfirmPage() {
   const supabase = createClient();
   const [orders, setOrders] = useState<any[]>([]);
+  const [slipModal, setSlipModal] = useState<string | null>(null);
 
   async function load() {
     const { data } = await supabase.from('orders').select('*').eq('status', 'pending').order('created_at', { ascending: true });
@@ -38,12 +39,27 @@ export default function PendingConfirmPage() {
           <div>ผู้ติดต่อ: {o.contact.name} · {o.contact.phone}</div>
           <div style={{ color: '#8a8378', marginBottom: 8 }}>ที่อยู่: {o.contact.address} | X: {o.contact.xAccount}</div>
           <div style={{ marginBottom: 8 }}>รหัสติดตามที่ลูกค้าตั้ง: <b>{o.tracking_code}</b></div>
-          {o.slip_image && <img src={o.slip_image} style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />}
+          {o.slip_image && (
+            <img
+              src={o.slip_image}
+              onClick={() => setSlipModal(o.slip_image)}
+              style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)', cursor: 'zoom-in' }}
+            />
+          )}
           <div style={{ marginTop: 14 }}>
             <button className="btn btn-primary" onClick={() => confirm(o.order_number)}>คอนเฟิร์มยอดเงิน</button>
           </div>
         </div>
       ))}
+
+      {slipModal && (
+        <div onClick={() => setSlipModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(58,50,42,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, padding: 20 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: 500, width: '100%', textAlign: 'center' }}>
+            <img src={slipModal} style={{ width: '100%', borderRadius: 12, marginBottom: 14 }} />
+            <button className="btn btn-outline" style={{ background: '#fff' }} onClick={() => setSlipModal(null)}>ปิด</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

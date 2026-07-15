@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 
-const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], categoryId: '' };
+const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], categoryId: '', isGiveaway: false };
 
 export default function AdminProductsPage() {
   const supabase = createClient();
@@ -61,23 +61,24 @@ export default function AdminProductsPage() {
   }
 
   async function saveProduct() {
-    if (!draft.name || !draft.price) { alert('กรุณากรอกชื่อสินค้าและราคา'); return; }
+    if (!draft.name || (!draft.isGiveaway && !draft.price)) { alert('กรุณากรอกชื่อสินค้าและราคา'); return; }
     const payload = {
       name: draft.name,
       description: draft.description,
-      price: Number(draft.price) || 0,
+      price: draft.isGiveaway ? 0 : Number(draft.price) || 0,
       shipping_fee: Number(draft.shippingFee) || 0,
       stock: Number(draft.stock) || 0,
       tags: draft.tags.split(',').map((t) => t.trim()).filter(Boolean),
       images: draft.images,
       category_id: draft.categoryId || null,
+      is_giveaway: draft.isGiveaway,
     };
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
       logAdminAction(`แก้ไขสินค้า "${payload.name}"`);
     } else {
       await supabase.from('products').insert(payload);
-      logAdminAction(`เพิ่มสินค้าใหม่ "${payload.name}"`);
+      logAdminAction(`เพิ่มสินค้าใหม่ "${payload.name}"${payload.is_giveaway ? ' (ของแจก)' : ''}`);
     }
     setDraft(emptyDraft);
     setEditingId(null);
@@ -89,6 +90,7 @@ export default function AdminProductsPage() {
     setDraft({
       name: p.name, description: p.description, price: String(p.price), shippingFee: String(p.shipping_fee),
       stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [], categoryId: p.category_id || '',
+      isGiveaway: !!p.is_giveaway,
     });
   }
 
@@ -137,6 +139,17 @@ export default function AdminProductsPage() {
 
       <div className="card">
         <h3>{editingId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h3>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={draft.isGiveaway}
+            onChange={(e) => setDraft({ ...draft, isGiveaway: e.target.checked, price: e.target.checked ? '0' : draft.price })}
+            style={{ width: 18, height: 18 }}
+          />
+          <span style={{ fontWeight: 600 }}>เป็นของแจก (ราคา 0 บาทอัตโนมัติ — ตั้งค่าจัดส่งเองได้ตามปกติ)</span>
+        </label>
+
         <div className="field"><label>ชื่อสินค้า</label>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียดสินค้า</label>
@@ -155,7 +168,8 @@ export default function AdminProductsPage() {
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <div className="field" style={{ flex: 1 }}><label>ราคา (บาท)</label>
-            <input type="number" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} /></div>
+            <input type="number" disabled={draft.isGiveaway} value={draft.isGiveaway ? 0 : draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })}
+              style={draft.isGiveaway ? { background: 'var(--paper-dim)', color: '#8a8378' } : undefined} /></div>
           <div className="field" style={{ flex: 1 }}><label>ค่าจัดส่ง (บาท)</label>
             <input type="number" value={draft.shippingFee} onChange={(e) => setDraft({ ...draft, shippingFee: e.target.value })} /></div>
           <div className="field" style={{ flex: 1 }}><label>จำนวนคงเหลือ</label>
@@ -193,9 +207,11 @@ export default function AdminProductsPage() {
             {products.map((p) => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td><img src={p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
-                <td>{p.name}</td>
+                <td>{p.name}{p.is_giveaway && (
+                  <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
+                )}</td>
                 <td>{categoryName(p.category_id)}</td>
-                <td>฿{p.price}</td>
+                <td>{p.is_giveaway ? 'ฟรี' : `฿${p.price}`}</td>
                 <td>{p.stock}</td>
                 <td>{heldMap[p.id] ? `${heldMap[p.id]} ชิ้น (รอคอนเฟิร์ม)` : '-'}</td>
                 <td style={{ whiteSpace: 'nowrap' }}>

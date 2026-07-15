@@ -2,7 +2,7 @@ export type Lang = 'th' | 'en';
 
 export const translations: Record<Lang, any> = {
   th: {
-    nav: { home: 'หน้าแรก', tracking: 'ติดตามพัสดุ', contact: 'ติดต่อร้าน', login: 'เข้าสู่ระบบ', cart: 'ตะกร้า' },
+    nav: { home: 'หน้าแรก', tracking: 'ติดตามพัสดุ', giveaway: 'ของแจก', contact: 'ติดต่อร้าน', login: 'เข้าสู่ระบบ', cart: 'ตะกร้า' },
     home: {
       heading: 'เลือกช้อปได้เลย',
       searchPlaceholder: 'ค้นหาชื่อสินค้า หรือแท็ก...',
@@ -81,7 +81,7 @@ export const translations: Record<Lang, any> = {
     },
   },
   en: {
-    nav: { home: 'Home', tracking: 'Tracking', contact: 'Contact us', login: 'Log in', cart: 'Cart' },
+    nav: { home: 'Home', tracking: 'Tracking', giveaway: 'Giveaway', contact: 'Contact us', login: 'Log in', cart: 'Cart' },
     home: {
       heading: 'Shop our products',
       searchPlaceholder: 'Search product name or tag...',

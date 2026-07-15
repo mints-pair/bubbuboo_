@@ -220,3 +220,4 @@ create policy "admin manage categories" on categories
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 alter table products add column if not exists category_id uuid references categories(id) on delete set null;
+alter table products add column if not exists is_giveaway boolean not null default false;

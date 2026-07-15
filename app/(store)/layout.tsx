@@ -80,6 +80,10 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
             background: pathname === '/tracking' ? 'var(--plum)' : 'transparent',
             color: pathname === '/tracking' ? '#fff' : 'var(--ink)',
           }}>{t('nav.tracking')}</Link>
+          <Link href="/giveaway" className="store-sidebar-link" style={{
+            background: pathname === '/giveaway' ? 'var(--plum)' : 'transparent',
+            color: pathname === '/giveaway' ? '#fff' : 'var(--ink)',
+          }}>{t('nav.giveaway')}</Link>
         </nav>
         <main className="store-main">{children}</main>
       </div>

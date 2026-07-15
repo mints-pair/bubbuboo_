@@ -1,0 +1,66 @@
+'use client';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { computeAvailability } from '@/lib/availability';
+import { useLang } from '@/lib/lang-context';
+
+export default function GiveawayPage() {
+  const supabase = createClient();
+  const { t } = useLang();
+  const [products, setProducts] = useState<any[]>([]);
+  const [heldMap, setHeldMap] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function load() {
+    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', true).order('created_at', { ascending: false });
+    setProducts(p || []);
+    const { data: held } = await supabase.rpc('held_stock');
+    const map: Record<string, number> = {};
+    (held || []).forEach((row: any) => { map[row.product_id] = Number(row.held_qty); });
+    setHeldMap(map);
+    setLoading(false);
+  }
+
+  return (
+    <div className="container">
+      <h1>ของแจก</h1>
+      <p style={{ color: '#8a8378', marginTop: -6, marginBottom: 20 }}>
+        สินค้าฟรี บางชิ้นมีค่าจัดส่ง บางชิ้นส่งฟรี — เช็คได้ที่หน้ารายละเอียดสินค้า
+      </p>
+      {!loading && products.length === 0 ? (
+        <p style={{ color: '#9a9490' }}>ยังไม่มีของแจกในตอนนี้</p>
+      ) : (
+        <div className="grid">
+          {products.map((p) => {
+            const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
+            let stockLabel = t('home.stockLeft', { n: available });
+            if (p.stock <= 0) stockLabel = t('home.soldOut');
+            else if (heldAll) stockLabel = t('home.reserved');
+            return (
+              <Link key={p.id} href={`/product/${p.id}`} className="p-card">
+                <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
+                <div className="p-body">
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="p-price" style={{ color: 'var(--jade)' }}>ฟรี</span>
+                    <span style={{ fontSize: 11, color: '#8a8378' }}>
+                      {p.shipping_fee > 0 ? `+ ค่าส่ง ฿${Number(p.shipping_fee).toLocaleString('th-TH')}` : '(ส่งฟรี)'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
+                    {stockLabel}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

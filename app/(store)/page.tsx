@@ -22,7 +22,7 @@ export default function HomePage() {
   }, []);
 
   async function load() {
-    const { data: p } = await supabase.from('products').select('*').order('created_at', { ascending: false });
+    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', false).order('created_at', { ascending: false });
     setProducts(p || []);
     const { data: c } = await supabase.from('categories').select('*').order('name', { ascending: true });
     setCategories(c || []);

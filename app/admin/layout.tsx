@@ -32,6 +32,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/orders/ship', label: `คำสั่งซื้อรอการส่ง${shipCount ? ` (${shipCount})` : ''}` },
     { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },
     { href: '/admin/members', label: 'ระบบสมาชิก' },
+    { href: '/admin/settings', label: 'ตั้งค่าร้าน' },
   ];
 
   async function logout() {

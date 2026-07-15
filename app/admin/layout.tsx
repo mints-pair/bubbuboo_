@@ -26,9 +26,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="container" style={{ maxWidth: 1000 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
         <h1>ระบบหลังบ้าน</h1>
-        <button className="btn btn-outline" onClick={logout}>ออกจากระบบ</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/" className="btn btn-outline" style={{ textDecoration: 'none', display: 'inline-block' }}>← กลับหน้าหลัก</Link>
+          <button className="btn btn-outline" onClick={logout}>ออกจากระบบ</button>
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '20px 0' }}>
         {TABS.map((t) => (

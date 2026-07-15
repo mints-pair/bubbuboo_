@@ -33,8 +33,8 @@ export async function POST(req: Request) {
     return { productId: p.id, name: p.name, qty: item.qty, price: unitPrice, image: p.images?.[0] || '' };
   });
 
-  const subtotal = orderItems.reduce((a, it) => a + it.price * it.qty, 0);
-  const rawShippingFee = products.reduce((max, p) => Math.max(max, p.shipping_fee || 0), 0);
+  const subtotal = orderItems.reduce((a: number, it: any) => a + it.price * it.qty, 0);
+  const rawShippingFee = products.reduce((max: number, p: any) => Math.max(max, p.shipping_fee || 0), 0);
   const shippingFee = effectiveShippingFee(rawShippingFee, promo);
   const total = subtotal + shippingFee;
 

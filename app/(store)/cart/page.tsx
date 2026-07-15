@@ -42,11 +42,11 @@ export default function CartPage() {
   const freeShipLive = isFreeShippingLive(promo);
 
   const lines = cart.map((l) => ({ ...l, product: products[l.productId] })).filter((l) => l.product);
-  const subtotalOriginal = lines.reduce((a, l) => a + l.product.price * l.qty, 0);
+  const subtotalOriginal = lines.reduce((a: number, l: any) => a + l.product.price * l.qty, 0);
   const subtotal = discountLive
-    ? lines.reduce((a, l) => a + discountedPrice(l.product.price, promo) * l.qty, 0)
+    ? lines.reduce((a: number, l: any) => a + discountedPrice(l.product.price, promo) * l.qty, 0)
     : subtotalOriginal;
-  const rawShippingFee = lines.reduce((max, l) => Math.max(max, l.product.shipping_fee || 0), 0);
+  const rawShippingFee = lines.reduce((max: number, l: any) => Math.max(max, l.product.shipping_fee || 0), 0);
   const shippingFee = effectiveShippingFee(rawShippingFee, promo);
   const total = subtotal + shippingFee;
 

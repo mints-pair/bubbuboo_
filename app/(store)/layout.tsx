@@ -18,7 +18,7 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<{ store_name?: string; logo_url?: string } | null>(null);
 
   useEffect(() => {
-    const update = () => setCartCount(getCart().reduce((a, c) => a + c.qty, 0));
+    const update = () => setCartCount(getCart().reduce((a: number, c: any) => a + c.qty, 0));
     update();
     window.addEventListener('cart-updated', update);
     window.addEventListener('storage', update);

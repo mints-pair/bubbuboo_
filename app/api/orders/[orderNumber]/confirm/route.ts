@@ -37,5 +37,7 @@ export async function POST(_req: Request, { params }: { params: { orderNumber: s
     });
   }
 
+  await supabase.from('admin_logs').insert({ admin_email: user.email, message: `คอนเฟิร์มออเดอร์ ${params.orderNumber}` });
+
   return NextResponse.json({ ok: true });
 }

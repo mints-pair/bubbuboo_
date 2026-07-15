@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logAdminAction } from '@/lib/adminLog';
 import type { ReactNode } from 'react';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -33,9 +34,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },
     { href: '/admin/members', label: 'ระบบสมาชิก' },
     { href: '/admin/settings', label: 'ตั้งค่าร้าน' },
+    { href: '/admin/logs', label: 'บันทึกการใช้งาน' },
   ];
 
   async function logout() {
+    await logAdminAction('ออกจากระบบ');
     await supabase.auth.signOut();
     router.push('/admin/login');
   }

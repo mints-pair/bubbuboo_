@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logAdminAction } from '@/lib/adminLog';
 
 export default function AdminSettingsPage() {
   const supabase = createClient();
@@ -48,6 +49,7 @@ export default function AdminSettingsPage() {
       qr_image_url: settings.qr_image_url,
       logo_url: settings.logo_url,
     }).eq('id', 1);
+    logAdminAction('บันทึกการตั้งค่าร้าน');
     alert('บันทึกการตั้งค่าแล้ว');
   }
 

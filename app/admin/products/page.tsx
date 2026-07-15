@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logAdminAction } from '@/lib/adminLog';
 
 const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[] };
 
@@ -51,8 +52,10 @@ export default function AdminProductsPage() {
     };
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
+      logAdminAction(`แก้ไขสินค้า "${payload.name}"`);
     } else {
       await supabase.from('products').insert(payload);
+      logAdminAction(`เพิ่มสินค้าใหม่ "${payload.name}"`);
     }
     setDraft(emptyDraft);
     setEditingId(null);
@@ -69,7 +72,9 @@ export default function AdminProductsPage() {
 
   async function deleteProduct(id: string) {
     if (!confirm('ลบสินค้านี้?')) return;
+    const p = products.find((x) => x.id === id);
     await supabase.from('products').delete().eq('id', id);
+    logAdminAction(`ลบสินค้า "${p?.name || id}"`);
     load();
   }
 

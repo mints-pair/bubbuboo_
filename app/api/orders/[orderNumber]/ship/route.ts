@@ -16,5 +16,10 @@ export async function POST(req: Request, { params }: { params: { orderNumber: st
     shipping: { trackingNumber, carrier, date },
   }).eq('order_number', params.orderNumber);
 
+  await supabase.from('admin_logs').insert({
+    admin_email: user.email,
+    message: `บันทึกข้อมูลจัดส่งออเดอร์ ${params.orderNumber} (เลขพัสดุ ${trackingNumber}, ${carrier})`,
+  });
+
   return NextResponse.json({ ok: true });
 }

@@ -156,3 +156,19 @@ create policy "public upload shop-images" on storage.objects
 
 create policy "public read shop-images" on storage.objects
   for select using (bucket_id = 'shop-images');
+
+-- ============================================================
+-- ADMIN ACTIVITY LOG
+-- Records who (by email) did what, and when. Useful once there's more
+-- than one admin account, or just as an audit trail.
+-- ============================================================
+create table if not exists admin_logs (
+  id uuid primary key default gen_random_uuid(),
+  admin_email text not null,
+  message text not null,
+  created_at timestamptz not null default now()
+);
+alter table admin_logs enable row level security;
+
+create policy "admin manage logs" on admin_logs
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

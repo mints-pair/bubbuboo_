@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { logAdminAction } from '@/lib/adminLog';
 
 export default function HistoryPage() {
   const supabase = createClient();
@@ -64,6 +65,7 @@ export default function HistoryPage() {
     // re-verify the admin's password without ending their existing session
     const { error } = await supabase.auth.signInWithPassword({ email: user.email, password });
     if (error) { setUnlockError('รหัสผ่านไม่ถูกต้อง'); return; }
+    logAdminAction(`ปลดล็อคออเดอร์ ${unlockTarget} เพื่อแก้ไข`);
     setUnlocked((u) => ({ ...u, [unlockTarget!]: true }));
     setUnlockTarget(null);
     setPassword('');

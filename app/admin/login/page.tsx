@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { logAdminAction } from '@/lib/adminLog';
 
 export default function AdminLoginPage() {
   const supabase = createClient();
@@ -29,6 +30,7 @@ export default function AdminLoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) { setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง'); return; }
+    logAdminAction('เข้าสู่ระบบหลังบ้าน');
     router.push('/admin/products');
     router.refresh();
   }

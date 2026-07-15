@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
+import { isPromotionLive, isDiscountLive, isFreeShippingLive, discountedPrice } from '@/lib/promotion';
 
 export default function HomePage() {
   const supabase = createClient();
   const { t } = useLang();
   const [products, setProducts] = useState<any[]>([]);
   const [heldMap, setHeldMap] = useState<Record<string, number>>({});
+  const [promo, setPromo] = useState<any>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +26,8 @@ export default function HomePage() {
     const map: Record<string, number> = {};
     (held || []).forEach((row: any) => { map[row.product_id] = Number(row.held_qty); });
     setHeldMap(map);
+    const { data: promoData } = await supabase.from('promotion').select('*').single();
+    setPromo(promoData);
     setLoading(false);
   }
 
@@ -31,8 +35,20 @@ export default function HomePage() {
     ? products.filter((p) => (p.name + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(query.trim().toLowerCase()))
     : products;
 
+  const promoLive = isPromotionLive(promo);
+  const discountLive = isDiscountLive(promo);
+  const freeShipLive = isFreeShippingLive(promo);
+
   return (
     <div className="container">
+      {promoLive && (
+        <div style={{
+          background: 'var(--marigold)', color: 'var(--ink)', borderRadius: 12, padding: '12px 16px',
+          fontWeight: 600, fontSize: 14, marginBottom: 18, textAlign: 'center',
+        }}>
+          {promo.label || (discountLive ? `ลดราคาทุกชิ้น ${promo.discount_percent}%` : '') || (freeShipLive ? 'ส่งฟรีทุกออเดอร์วันนี้!' : 'มีโปรโมชั่นพิเศษ')}
+        </div>
+      )}
       <h1>{t('home.heading')}</h1>
       <div style={{ margin: '16px 0 22px' }}>
         <input
@@ -51,14 +67,22 @@ export default function HomePage() {
             let stockLabel = t('home.stockLeft', { n: available });
             if (p.stock <= 0) stockLabel = t('home.soldOut');
             else if (heldAll) stockLabel = t('home.reserved');
+            const finalPrice = discountLive ? discountedPrice(p.price, promo) : p.price;
             return (
               <Link key={p.id} href={`/product/${p.id}`} className="p-card">
                 <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
                 <div className="p-body">
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
-                  <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
+                  {discountLive ? (
+                    <div>
+                      <span style={{ fontSize: 12.5, color: '#a89f92', textDecoration: 'line-through', marginRight: 6 }}>฿{Number(p.price).toLocaleString('th-TH')}</span>
+                      <span className="p-price">฿{Number(finalPrice).toLocaleString('th-TH')}</span>
+                    </div>
+                  ) : (
+                    <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
+                  )}
                   <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
-                    {stockLabel}
+                    {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ' · ส่งฟรี' : ''}
                   </div>
                 </div>
               </Link>

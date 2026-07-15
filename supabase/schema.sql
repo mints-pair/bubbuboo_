@@ -172,3 +172,31 @@ alter table admin_logs enable row level security;
 
 create policy "admin manage logs" on admin_logs
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ============================================================
+-- PROMOTION (single row) — storewide sale settings
+-- "active" is a manual master on/off switch. start_at/end_at are optional —
+-- if set, the promotion auto-activates/deactivates at those times (on top
+-- of "active" still needing to be true). Leave them blank to control
+-- purely with the manual switch.
+-- ============================================================
+create table if not exists promotion (
+  id int primary key default 1,
+  active boolean not null default false,
+  discount_active boolean not null default false,
+  discount_percent numeric not null default 0,
+  free_shipping_active boolean not null default false,
+  label text not null default '',
+  start_at timestamptz,
+  end_at timestamptz,
+  constraint single_row_promo check (id = 1)
+);
+insert into promotion (id) values (1) on conflict (id) do nothing;
+
+alter table promotion enable row level security;
+
+create policy "public read promotion" on promotion
+  for select using (true);
+
+create policy "admin manage promotion" on promotion
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

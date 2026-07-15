@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getCart, removeFromCart, clearCart, CartLine } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
+import { isDiscountLive, isFreeShippingLive, discountedPrice, effectiveShippingFee } from '@/lib/promotion';
 
 type Step = 'cart' | 'payment' | 'done';
 
@@ -15,6 +16,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [products, setProducts] = useState<Record<string, any>>({});
   const [settings, setSettings] = useState<any>(null);
+  const [promo, setPromo] = useState<any>(null);
   const [contact, setContact] = useState({ xAccount: '', name: '', address: '', phone: '' });
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [trackingCode, setTrackingCode] = useState('');
@@ -33,11 +35,19 @@ export default function CartPage() {
       });
     }
     supabase.from('settings').select('*').single().then(({ data }) => setSettings(data));
+    supabase.from('promotion').select('*').single().then(({ data }) => setPromo(data));
   }, []);
 
+  const discountLive = isDiscountLive(promo);
+  const freeShipLive = isFreeShippingLive(promo);
+
   const lines = cart.map((l) => ({ ...l, product: products[l.productId] })).filter((l) => l.product);
-  const subtotal = lines.reduce((a, l) => a + l.product.price * l.qty, 0);
-  const shippingFee = lines.reduce((max, l) => Math.max(max, l.product.shipping_fee || 0), 0);
+  const subtotalOriginal = lines.reduce((a, l) => a + l.product.price * l.qty, 0);
+  const subtotal = discountLive
+    ? lines.reduce((a, l) => a + discountedPrice(l.product.price, promo) * l.qty, 0)
+    : subtotalOriginal;
+  const rawShippingFee = lines.reduce((max, l) => Math.max(max, l.product.shipping_fee || 0), 0);
+  const shippingFee = effectiveShippingFee(rawShippingFee, promo);
   const total = subtotal + shippingFee;
 
   async function goToPayment() {
@@ -65,8 +75,9 @@ export default function CartPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: lines.map((l) => ({ productId: l.productId, name: l.product.name, qty: l.qty, price: l.product.price })),
-          subtotal, shippingFee, total,
+          // productId + qty are what matter — the server recomputes prices,
+          // shipping, and totals itself from the live product + promotion data.
+          items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           contact, trackingCode, slipImage: pub.publicUrl,
         }),
       });
@@ -112,19 +123,31 @@ export default function CartPage() {
         <>
           <h1>{t('cart.title')}</h1>
           <div className="card">
-            {lines.map((l) => (
-              <div key={l.productId} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
-                <img src={l.product.images?.[0] || ''} style={{ width: 58, height: 58, objectFit: 'cover', borderRadius: 8 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{l.product.name}</div>
-                  <div style={{ fontSize: 13, color: '#8a8378' }}>฿{l.product.price} × {l.qty}</div>
-                  <button onClick={() => { removeFromCart(l.productId); setCart(getCart()); }} style={{ background: 'none', border: 'none', color: 'var(--rose)', fontSize: 12.5, textDecoration: 'underline' }}>{t('cart.remove')}</button>
+            {lines.map((l) => {
+              const unitPrice = discountLive ? discountedPrice(l.product.price, promo) : l.product.price;
+              return (
+                <div key={l.productId} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
+                  <img src={l.product.images?.[0] || ''} style={{ width: 58, height: 58, objectFit: 'cover', borderRadius: 8 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600 }}>{l.product.name}</div>
+                    <div style={{ fontSize: 13, color: '#8a8378' }}>
+                      {discountLive && <span style={{ textDecoration: 'line-through', marginRight: 6 }}>฿{l.product.price}</span>}
+                      ฿{unitPrice} × {l.qty}
+                    </div>
+                    <button onClick={() => { removeFromCart(l.productId); setCart(getCart()); }} style={{ background: 'none', border: 'none', color: 'var(--rose)', fontSize: 12.5, textDecoration: 'underline' }}>{t('cart.remove')}</button>
+                  </div>
+                  <div style={{ fontWeight: 600 }}>฿{(unitPrice * l.qty).toLocaleString('th-TH')}</div>
                 </div>
-                <div style={{ fontWeight: 600 }}>฿{(l.product.price * l.qty).toLocaleString('th-TH')}</div>
-              </div>
-            ))}
+              );
+            })}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0' }}><span>{t('cart.subtotal')}</span><span>฿{subtotal.toLocaleString('th-TH')}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('cart.shippingFee')}</span><span>฿{shippingFee.toLocaleString('th-TH')}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+              <span>{t('cart.shippingFee')}</span>
+              <span>
+                {freeShipLive && rawShippingFee > 0 && <span style={{ textDecoration: 'line-through', color: '#a89f92', marginRight: 6 }}>฿{rawShippingFee.toLocaleString('th-TH')}</span>}
+                ฿{shippingFee.toLocaleString('th-TH')}{freeShipLive ? ' (ฟรี!)' : ''}
+              </span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 19, borderTop: '1.5px dashed var(--line)', marginTop: 8, paddingTop: 12 }}><span>{t('cart.total')}</span><span>฿{total.toLocaleString('th-TH')}</span></div>
           </div>
 

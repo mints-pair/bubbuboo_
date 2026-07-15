@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: { orderNumber: st
   const body = await req.json().catch(() => ({}));
   const supabase = createAdminSupabase();
 
-  // action: 'receive' (default) | 'revert-to-shipping' | 'edit-shipping'
+  // action: 'receive' (default) | 'revert-to-shipping' | 'edit-shipping' | 'delete'
   const action = body.action || 'receive';
 
   if (action === 'receive') {
@@ -20,6 +20,8 @@ export async function POST(req: Request, { params }: { params: { orderNumber: st
   } else if (action === 'edit-shipping') {
     const { trackingNumber, carrier, date } = body;
     await supabase.from('orders').update({ shipping: { trackingNumber, carrier, date } }).eq('order_number', params.orderNumber);
+  } else if (action === 'delete') {
+    await supabase.from('orders').delete().eq('order_number', params.orderNumber);
   }
 
   return NextResponse.json({ ok: true });

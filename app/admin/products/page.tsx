@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 
-const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[] };
+const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], categoryId: '' };
 
 export default function AdminProductsPage() {
   const supabase = createClient();
   const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -16,12 +18,31 @@ export default function AdminProductsPage() {
   async function load() {
     const { data: p } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     setProducts(p || []);
+    const { data: c } = await supabase.from('categories').select('*').order('name', { ascending: true });
+    setCategories(c || []);
     const { data: held } = await supabase.rpc('held_stock');
     const map: Record<string, number> = {};
     (held || []).forEach((row: any) => { map[row.product_id] = Number(row.held_qty); });
     setHeldMap(map);
   }
   useEffect(() => { load(); }, []);
+
+  async function addCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    const { error } = await supabase.from('categories').insert({ name });
+    if (error) { alert('เพิ่มหมวดหมู่ไม่สำเร็จ: ' + error.message); return; }
+    logAdminAction(`เพิ่มหมวดหมู่สินค้า "${name}"`);
+    setNewCategoryName('');
+    load();
+  }
+
+  async function deleteCategory(id: string, name: string) {
+    if (!confirm(`ลบหมวดหมู่ "${name}"? สินค้าที่อยู่ในหมวดนี้จะกลายเป็นไม่มีหมวดหมู่ (ไม่ถูกลบ)`)) return;
+    await supabase.from('categories').delete().eq('id', id);
+    logAdminAction(`ลบหมวดหมู่สินค้า "${name}"`);
+    load();
+  }
 
   async function uploadFiles(files: FileList) {
     setUploading(true);
@@ -49,6 +70,7 @@ export default function AdminProductsPage() {
       stock: Number(draft.stock) || 0,
       tags: draft.tags.split(',').map((t) => t.trim()).filter(Boolean),
       images: draft.images,
+      category_id: draft.categoryId || null,
     };
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
@@ -66,7 +88,7 @@ export default function AdminProductsPage() {
     setEditingId(p.id);
     setDraft({
       name: p.name, description: p.description, price: String(p.price), shippingFee: String(p.shipping_fee),
-      stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [],
+      stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [], categoryId: p.category_id || '',
     });
   }
 
@@ -78,14 +100,59 @@ export default function AdminProductsPage() {
     load();
   }
 
+  function categoryName(id: string | null) {
+    return categories.find((c) => c.id === id)?.name || '-';
+  }
+
   return (
     <div>
+      <div className="card">
+        <h3>หมวดหมู่สินค้า</h3>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          <input
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addCategory()}
+            placeholder="ชื่อหมวดหมู่ใหม่ เช่น เสื้อผ้า"
+            style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+          />
+          <button className="btn btn-outline" onClick={addCategory}>เพิ่มหมวดหมู่</button>
+        </div>
+        {categories.length === 0 ? (
+          <p style={{ color: '#9a9490', fontSize: 13.5 }}>ยังไม่มีหมวดหมู่ — เพิ่มไว้ก่อนเพื่อเลือกใช้ตอนเพิ่มสินค้า</p>
+        ) : (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {categories.map((c) => (
+              <span key={c.id} style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--jade-light)', color: 'var(--jade)',
+                fontSize: 12.5, fontWeight: 600, padding: '5px 10px', borderRadius: 99,
+              }}>
+                {c.name}
+                <button onClick={() => deleteCategory(c.id, c.name)} style={{ background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card">
         <h3>{editingId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h3>
         <div className="field"><label>ชื่อสินค้า</label>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียดสินค้า</label>
           <textarea rows={3} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
+        <div className="field"><label>หมวดหมู่สินค้า</label>
+          <select
+            value={draft.categoryId}
+            onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+          >
+            <option value="">ไม่มีหมวดหมู่</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <div className="field" style={{ flex: 1 }}><label>ราคา (บาท)</label>
             <input type="number" value={draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })} /></div>
@@ -120,13 +187,14 @@ export default function AdminProductsPage() {
         <h3>สินค้าทั้งหมด ({products.length})</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
-            <th></th><th>ชื่อ</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
+            <th></th><th>ชื่อ</th><th>หมวดหมู่</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
           </tr></thead>
           <tbody>
             {products.map((p) => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
                 <td><img src={p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                 <td>{p.name}</td>
+                <td>{categoryName(p.category_id)}</td>
                 <td>฿{p.price}</td>
                 <td>{p.stock}</td>
                 <td>{heldMap[p.id] ? `${heldMap[p.id]} ชิ้น (รอคอนเฟิร์ม)` : '-'}</td>

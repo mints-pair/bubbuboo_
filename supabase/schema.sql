@@ -200,3 +200,21 @@ create policy "public read promotion" on promotion
 
 create policy "admin manage promotion" on promotion
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ============================================================
+-- CATEGORIES
+-- ============================================================
+create table if not exists categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+alter table categories enable row level security;
+
+create policy "public read categories" on categories
+  for select using (true);
+
+create policy "admin manage categories" on categories
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+alter table products add column if not exists category_id uuid references categories(id) on delete set null;

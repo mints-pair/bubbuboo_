@@ -10,6 +10,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const { t } = useLang();
   const [p, setP] = useState<any>(null);
+  const [categoryName, setCategoryName] = useState('');
   const [available, setAvailable] = useState(0);
   const [heldAll, setHeldAll] = useState(false);
   const [promo, setPromo] = useState<any>(null);
@@ -23,6 +24,12 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     setLoading(true);
     const { data: product } = await supabase.from('products').select('*').eq('id', params.id).single();
     setP(product);
+    if (product?.category_id) {
+      const { data: cat } = await supabase.from('categories').select('name').eq('id', product.category_id).single();
+      setCategoryName(cat?.name || '');
+    } else {
+      setCategoryName('');
+    }
     if (product) {
       const { data: held } = await supabase.rpc('held_stock');
       const heldQty = (held || []).find((r: any) => r.product_id === product.id)?.held_qty || 0;
@@ -53,6 +60,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       </div>
       <div style={{ flex: 1, minWidth: 260 }}>
         <h1>{p.name}</h1>
+        {categoryName && (
+          <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--paper-dim)', color: '#8a8378', padding: '3px 10px', borderRadius: 99, marginBottom: 8 }}>
+            {categoryName}
+          </span>
+        )}
         {discountLive ? (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontSize: 17, color: '#a89f92', textDecoration: 'line-through' }}>฿{Number(p.price).toLocaleString('th-TH')}</span>

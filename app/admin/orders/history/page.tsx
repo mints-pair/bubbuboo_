@@ -48,6 +48,15 @@ export default function HistoryPage() {
     load();
   }
 
+  async function deleteOrder(orderNumber: string) {
+    if (!confirm(`ลบรายการ ${orderNumber} ถาวร? การกระทำนี้ย้อนกลับไม่ได้`)) return;
+    await fetch(`/api/orders/${orderNumber}/receive`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'delete' }),
+    });
+    setUnlocked((u) => { const n = { ...u }; delete n[orderNumber]; return n; });
+    load();
+  }
+
   async function submitUnlock() {
     setUnlockError('');
     const { data: { user } } = await supabase.auth.getUser();
@@ -99,6 +108,8 @@ export default function HistoryPage() {
                     <>
                       <button className="btn btn-outline" onClick={() => saveEdit(o.order_number)}>บันทึกข้อมูลจัดส่ง</button>
                       <button className="btn btn-primary" onClick={() => markReceived(o.order_number)}>ลูกค้าได้รับแล้ว →</button>
+                      <button className="btn btn-outline" style={{ color: 'var(--rose)', borderColor: 'var(--rose)' }}
+                        onClick={() => deleteOrder(o.order_number)}>ลบรายการนี้</button>
                     </>
                   ) : (
                     <>
@@ -106,6 +117,8 @@ export default function HistoryPage() {
                       <button className="btn btn-outline" onClick={() => revertToShipping(o.order_number)}>ย้อนกลับเป็นกำลังจัดส่ง</button>
                       <button className="btn btn-outline" style={{ color: 'var(--rose)' }}
                         onClick={() => setUnlocked((u) => { const n = { ...u }; delete n[o.order_number]; return n; })}>ล็อคอีกครั้ง</button>
+                      <button className="btn btn-outline" style={{ color: 'var(--rose)', borderColor: 'var(--rose)' }}
+                        onClick={() => deleteOrder(o.order_number)}>ลบรายการนี้</button>
                     </>
                   )}
                 </div>

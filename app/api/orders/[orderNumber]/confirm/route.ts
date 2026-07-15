@@ -5,8 +5,8 @@ import { createServerSupabase } from '@/lib/supabase/server';
 export async function POST(_req: Request, { params }: { params: { orderNumber: string } }) {
   // make sure the caller is a logged-in admin
   const authed = createServerSupabase();
-  const { data: { session } } = await authed.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const { data: { user } } = await authed.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const supabase = createAdminSupabase();
   const { data: order } = await supabase.from('orders').select('*').eq('order_number', params.orderNumber).single();

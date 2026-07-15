@@ -22,12 +22,15 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  // getUser() (not getSession()) actually revalidates the token against
+  // Supabase's server — this is the pattern Supabase recommends for
+  // middleware/SSR, since getSession() alone can be unreliable here.
+  const { data: { user } } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
   const isAdminRoute = path.startsWith('/admin') && path !== '/admin/login';
 
-  if (isAdminRoute && !session) {
+  if (isAdminRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/admin/login';
     return NextResponse.redirect(url);

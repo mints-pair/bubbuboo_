@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -10,6 +10,18 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    // Already logged in? Skip the form entirely and go straight in.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        router.push('/admin/products');
+      } else {
+        setChecking(false);
+      }
+    });
+  }, []);
 
   async function login() {
     setLoading(true);
@@ -20,6 +32,8 @@ export default function AdminLoginPage() {
     router.push('/admin/products');
     router.refresh();
   }
+
+  if (checking) return <div className="container" />;
 
   return (
     <div className="container" style={{ maxWidth: 380, margin: '60px auto' }}>

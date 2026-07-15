@@ -4,8 +4,8 @@ import { createServerSupabase } from '@/lib/supabase/server';
 
 export async function POST(req: Request, { params }: { params: { orderNumber: string } }) {
   const authed = createServerSupabase();
-  const { data: { session } } = await authed.auth.getSession();
-  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const { data: { user } } = await authed.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
   const { trackingNumber, carrier, date } = await req.json();
   if (!trackingNumber || !carrier) return NextResponse.json({ error: 'กรอกข้อมูลให้ครบ' }, { status: 400 });

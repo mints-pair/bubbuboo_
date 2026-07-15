@@ -41,6 +41,21 @@ export default function AdminProductsPage() {
     setUploading(false);
   }
 
+  const [uploadingQr, setUploadingQr] = useState(false);
+  async function uploadQr(file: File) {
+    setUploadingQr(true);
+    const ext = file.name.split('.').pop();
+    const path = `settings/qr-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('shop-images').upload(path, file);
+    if (!error) {
+      const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
+      setSettings((s: any) => ({ ...s, qr_image_url: data.publicUrl }));
+    } else {
+      alert('อัปโหลดไม่สำเร็จ: ' + error.message);
+    }
+    setUploadingQr(false);
+  }
+
   async function saveSettings() {
     await supabase.from('settings').update({
       store_name: settings.store_name,
@@ -91,8 +106,14 @@ export default function AdminProductsPage() {
           <h3>ตั้งค่าร้าน</h3>
           <div className="field"><label>ชื่อร้าน</label>
             <input value={settings.store_name} onChange={(e) => setSettings({ ...settings, store_name: e.target.value })} /></div>
-          <div className="field"><label>ลิงก์รูป QR รับเงิน (URL)</label>
-            <input value={settings.qr_image_url || ''} onChange={(e) => setSettings({ ...settings, qr_image_url: e.target.value })} /></div>
+          <div className="field">
+            <label>รูป QR รับเงิน (พร้อมเพย์)</label>
+            <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadQr(e.target.files[0])} />
+            {uploadingQr && <p>กำลังอัปโหลด...</p>}
+            {settings.qr_image_url && (
+              <img src={settings.qr_image_url} style={{ width: 140, height: 140, objectFit: 'contain', background: '#fff', border: '1px solid var(--line)', borderRadius: 10, padding: 8, marginTop: 10 }} />
+            )}
+          </div>
           <button className="btn btn-outline" onClick={saveSettings}>บันทึกการตั้งค่า</button>
         </div>
       )}

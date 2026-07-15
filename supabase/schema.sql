@@ -185,6 +185,8 @@ create table if not exists promotion (
   active boolean not null default false,
   discount_active boolean not null default false,
   discount_percent numeric not null default 0,
+  discount_scope text not null default 'all',
+  discount_product_ids uuid[] not null default '{}',
   free_shipping_active boolean not null default false,
   label text not null default '',
   start_at timestamptz,

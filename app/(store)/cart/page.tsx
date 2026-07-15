@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getCart, removeFromCart, clearCart, CartLine } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
-import { isDiscountLive, isFreeShippingLive, discountedPrice, effectiveShippingFee } from '@/lib/promotion';
+import { isDiscountLive, isFreeShippingLive, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
 type Step = 'cart' | 'payment' | 'done';
 
@@ -43,9 +43,10 @@ export default function CartPage() {
 
   const lines = cart.map((l) => ({ ...l, product: products[l.productId] })).filter((l) => l.product);
   const subtotalOriginal = lines.reduce((a: number, l: any) => a + l.product.price * l.qty, 0);
-  const subtotal = discountLive
-    ? lines.reduce((a: number, l: any) => a + discountedPrice(l.product.price, promo) * l.qty, 0)
-    : subtotalOriginal;
+  const subtotal = lines.reduce((a: number, l: any) => {
+    const unitPrice = productHasDiscount(l.product.id, promo) ? discountedPrice(l.product.id, l.product.price, promo) : l.product.price;
+    return a + unitPrice * l.qty;
+  }, 0);
   const rawShippingFee = lines.reduce((max: number, l: any) => Math.max(max, l.product.shipping_fee || 0), 0);
   const shippingFee = effectiveShippingFee(rawShippingFee, promo);
   const total = subtotal + shippingFee;
@@ -124,14 +125,15 @@ export default function CartPage() {
           <h1>{t('cart.title')}</h1>
           <div className="card">
             {lines.map((l) => {
-              const unitPrice = discountLive ? discountedPrice(l.product.price, promo) : l.product.price;
+              const lineDiscounted = productHasDiscount(l.product.id, promo);
+              const unitPrice = lineDiscounted ? discountedPrice(l.product.id, l.product.price, promo) : l.product.price;
               return (
                 <div key={l.productId} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--line)' }}>
                   <img src={l.product.images?.[0] || ''} style={{ width: 58, height: 58, objectFit: 'cover', borderRadius: 8 }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600 }}>{l.product.name}</div>
                     <div style={{ fontSize: 13, color: '#8a8378' }}>
-                      {discountLive && <span style={{ textDecoration: 'line-through', marginRight: 6 }}>฿{l.product.price}</span>}
+                      {lineDiscounted && <span style={{ textDecoration: 'line-through', marginRight: 6 }}>฿{l.product.price}</span>}
                       ฿{unitPrice} × {l.qty}
                     </div>
                     <button onClick={() => { removeFromCart(l.productId); setCart(getCart()); }} style={{ background: 'none', border: 'none', color: 'var(--rose)', fontSize: 12.5, textDecoration: 'underline' }}>{t('cart.remove')}</button>

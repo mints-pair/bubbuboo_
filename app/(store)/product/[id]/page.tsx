@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
-import { isDiscountLive, isFreeShippingLive, discountedPrice } from '@/lib/promotion';
+import { isDiscountLive, isFreeShippingLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
 import AddToCartBox from './AddToCartBox';
 
 export default function ProductPage({ params }: { params: { id: string } }) {
@@ -45,9 +45,9 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   if (loading) return <div className="container" />;
   if (!p) return <div className="container">{t('product.notFound')}</div>;
 
-  const discountLive = isDiscountLive(promo);
+  const productDiscounted = productHasDiscount(p.id, promo);
   const freeShipLive = isFreeShippingLive(promo);
-  const finalPrice = discountLive ? discountedPrice(p.price, promo) : p.price;
+  const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
 
   return (
     <div className="container" style={{ display: 'flex', gap: 30, flexWrap: 'wrap' }}>
@@ -65,7 +65,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             {categoryName}
           </span>
         )}
-        {discountLive ? (
+        {productDiscounted ? (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
             <span style={{ fontSize: 17, color: '#a89f92', textDecoration: 'line-through' }}>฿{Number(p.price).toLocaleString('th-TH')}</span>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--rose)', fontWeight: 700 }}>

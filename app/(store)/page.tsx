@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
-import { isPromotionLive, isDiscountLive, isFreeShippingLive, discountedPrice } from '@/lib/promotion';
+import { isPromotionLive, isDiscountLive, isFreeShippingLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
 
 export default function HomePage() {
   const supabase = createClient();
@@ -53,7 +53,7 @@ export default function HomePage() {
           background: 'var(--marigold)', color: 'var(--ink)', borderRadius: 12, padding: '12px 16px',
           fontWeight: 600, fontSize: 14, marginBottom: 18, textAlign: 'center',
         }}>
-          {promo.label || (discountLive ? `ลดราคาทุกชิ้น ${promo.discount_percent}%` : '') || (freeShipLive ? 'ส่งฟรีทุกออเดอร์วันนี้!' : 'มีโปรโมชั่นพิเศษ')}
+          {promo.label || (discountLive ? `ลดราคา${promo.discount_scope === 'selected' ? 'สินค้าที่ร่วมรายการ' : 'ทุกชิ้น'} ${promo.discount_percent}%` : '') || (freeShipLive ? 'ส่งฟรีทุกออเดอร์วันนี้!' : 'มีโปรโมชั่นพิเศษ')}
         </div>
       )}
       <h1>{t('home.heading')}</h1>
@@ -86,13 +86,14 @@ export default function HomePage() {
             let stockLabel = t('home.stockLeft', { n: available });
             if (p.stock <= 0) stockLabel = t('home.soldOut');
             else if (heldAll) stockLabel = t('home.reserved');
-            const finalPrice = discountLive ? discountedPrice(p.price, promo) : p.price;
+            const productDiscounted = productHasDiscount(p.id, promo);
+            const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
             return (
               <Link key={p.id} href={`/product/${p.id}`} className="p-card">
                 <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
                 <div className="p-body">
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
-                  {discountLive ? (
+                  {productDiscounted ? (
                     <div>
                       <span style={{ fontSize: 12.5, color: '#a89f92', textDecoration: 'line-through', marginRight: 6 }}>฿{Number(p.price).toLocaleString('th-TH')}</span>
                       <span className="p-price">฿{Number(finalPrice).toLocaleString('th-TH')}</span>

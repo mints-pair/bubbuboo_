@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { sendAdminTelegramMessage } from '@/lib/telegram';
-import { isDiscountLive, isFreeShippingLive, discountedPrice, effectiveShippingFee } from '@/lib/promotion';
+import { isFreeShippingLive, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -26,10 +26,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'พบสินค้าที่ไม่ถูกต้องในตะกร้า' }, { status: 400 });
   }
 
-  const discountLive = isDiscountLive(promo);
   const orderItems = items.map((item: any) => {
-    const p = products.find((x) => x.id === item.productId)!;
-    const unitPrice = discountLive ? discountedPrice(p.price, promo) : p.price;
+    const p = products.find((x: any) => x.id === item.productId)!;
+    const unitPrice = productHasDiscount(p.id, promo) ? discountedPrice(p.id, p.price, promo) : p.price;
     return { productId: p.id, name: p.name, qty: item.qty, price: unitPrice, image: p.images?.[0] || '' };
   });
 

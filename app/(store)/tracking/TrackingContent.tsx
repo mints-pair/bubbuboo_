@@ -1,20 +1,22 @@
 'use client';
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-
-const STEPS = [
-  { key: 'pending', label: 'รอตรวจสอบ' },
-  { key: 'confirmed', label: 'ยืนยันแล้ว' },
-  { key: 'shipping', label: 'กำลังจัดส่ง' },
-  { key: 'received', label: 'ได้รับแล้ว' },
-];
+import { useLang } from '@/lib/lang-context';
 
 export default function TrackingContent() {
   const params = useSearchParams();
+  const { t } = useLang();
   const [orderNumber, setOrderNumber] = useState(params.get('order') || '');
   const [code, setCode] = useState('');
   const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState('');
+
+  const STEPS = [
+    { key: 'pending', label: t('tracking.stepPending') },
+    { key: 'confirmed', label: t('tracking.stepConfirmed') },
+    { key: 'shipping', label: t('tracking.stepShipping') },
+    { key: 'received', label: t('tracking.stepReceived') },
+  ];
 
   async function search() {
     setError('');
@@ -29,14 +31,14 @@ export default function TrackingContent() {
 
   return (
     <div className="container">
-      <h1>ติดตามคำสั่งซื้อ</h1>
+      <h1>{t('tracking.title')}</h1>
       <div className="card" style={{ maxWidth: 420 }}>
-        <div className="field"><label>เลขออเดอร์</label>
+        <div className="field"><label>{t('tracking.orderNumberLabel')}</label>
           <input value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} placeholder="PW-2607001" /></div>
-        <div className="field"><label>รหัสติดตาม 6 หลัก</label>
+        <div className="field"><label>{t('tracking.codeLabel')}</label>
           <input maxLength={6} value={code} onChange={(e) => setCode(e.target.value)} placeholder="482913" /></div>
         {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
-        <button className="btn btn-primary" onClick={search}>ตรวจสอบสถานะ</button>
+        <button className="btn btn-primary" onClick={search}>{t('tracking.checkStatus')}</button>
       </div>
 
       {order && (
@@ -55,12 +57,12 @@ export default function TrackingContent() {
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>ยอดรวม</span><span>฿{Number(order.total).toLocaleString('th-TH')}</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.totalLabel')}</span><span>฿{Number(order.total).toLocaleString('th-TH')}</span></div>
           {order.shipping && (
             <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>บริการขนส่ง</span><span>{order.shipping.carrier}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>เลขพัสดุ</span><span>{order.shipping.trackingNumber}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>วันที่จัดส่ง</span><span>{order.shipping.date}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.carrierLabel')}</span><span>{order.shipping.carrier}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.trackingNumberLabel')}</span><span>{order.shipping.trackingNumber}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.dateLabel')}</span><span>{order.shipping.date}</span></div>
             </>
           )}
         </div>

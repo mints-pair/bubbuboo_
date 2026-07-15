@@ -1,23 +1,38 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { ReactNode } from 'react';
-
-const TABS = [
-  { href: '/admin/products', label: 'อัพโหลดสินค้า' },
-  { href: '/admin/orders/pending', label: 'คำสั่งซื้อรอการคอนเฟิร์ม' },
-  { href: '/admin/orders/ship', label: 'คำสั่งซื้อรอการส่ง' },
-  { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },
-  { href: '/admin/members', label: 'ระบบสมาชิก' },
-];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const [pendingCount, setPendingCount] = useState(0);
+  const [shipCount, setShipCount] = useState(0);
+
+  useEffect(() => {
+    if (pathname === '/admin/login') return;
+    loadCounts();
+  }, [pathname]);
+
+  async function loadCounts() {
+    const { count: pc } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+    const { count: sc } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'confirmed');
+    setPendingCount(pc || 0);
+    setShipCount(sc || 0);
+  }
 
   if (pathname === '/admin/login') return <>{children}</>;
+
+  const TABS = [
+    { href: '/admin/products', label: 'อัพโหลดสินค้า' },
+    { href: '/admin/orders/pending', label: `คำสั่งซื้อรอการคอนเฟิร์ม${pendingCount ? ` (${pendingCount})` : ''}` },
+    { href: '/admin/orders/ship', label: `คำสั่งซื้อรอการส่ง${shipCount ? ` (${shipCount})` : ''}` },
+    { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },
+    { href: '/admin/members', label: 'ระบบสมาชิก' },
+  ];
 
   async function logout() {
     await supabase.auth.signOut();

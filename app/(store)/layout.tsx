@@ -4,12 +4,14 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { getCart } from '@/lib/cart';
 import { createClient } from '@/lib/supabase/client';
+import { useLang } from '@/lib/lang-context';
 import ContactModal from '@/components/ContactModal';
 import LoginModal from '@/components/LoginModal';
 
 export default function StoreLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const supabase = createClient();
+  const { lang, setLang, t } = useLang();
   const [cartCount, setCartCount] = useState(0);
   const [contactOpen, setContactOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
@@ -49,10 +51,20 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
             </span>
           </Link>
           <div className="store-header-actions">
-            <button className="btn btn-outline" onClick={() => setContactOpen(true)}>Contact us</button>
-            <button className="btn btn-outline" onClick={() => setLoginOpen(true)}>เข้าสู่ระบบ</button>
+            <div style={{ display: 'flex', border: '1.5px solid var(--line)', borderRadius: 9, overflow: 'hidden' }}>
+              <button onClick={() => setLang('th')} style={{
+                border: 'none', padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                background: lang === 'th' ? 'var(--plum)' : '#fff', color: lang === 'th' ? '#fff' : 'var(--ink)',
+              }}>ไทย</button>
+              <button onClick={() => setLang('en')} style={{
+                border: 'none', padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                background: lang === 'en' ? 'var(--plum)' : '#fff', color: lang === 'en' ? '#fff' : 'var(--ink)',
+              }}>EN</button>
+            </div>
+            <button className="btn btn-outline" onClick={() => setContactOpen(true)}>{t('nav.contact')}</button>
+            <button className="btn btn-outline" onClick={() => setLoginOpen(true)}>{t('nav.login')}</button>
             <Link href="/cart" className="btn btn-outline" style={{ textDecoration: 'none', display: 'inline-block' }}>
-              ตะกร้า{cartCount > 0 ? ` (${cartCount})` : ''}
+              {t('nav.cart')}{cartCount > 0 ? ` (${cartCount})` : ''}
             </Link>
           </div>
         </div>
@@ -63,11 +75,11 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="store-sidebar-link" style={{
             background: pathname === '/' ? 'var(--plum)' : 'transparent',
             color: pathname === '/' ? '#fff' : 'var(--ink)',
-          }}>Home</Link>
+          }}>{t('nav.home')}</Link>
           <Link href="/tracking" className="store-sidebar-link" style={{
             background: pathname === '/tracking' ? 'var(--plum)' : 'transparent',
             color: pathname === '/tracking' ? '#fff' : 'var(--ink)',
-          }}>Tracking</Link>
+          }}>{t('nav.tracking')}</Link>
         </nav>
         <main className="store-main">{children}</main>
       </div>

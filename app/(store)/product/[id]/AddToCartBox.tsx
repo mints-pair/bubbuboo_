@@ -2,25 +2,27 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { addToCart } from '@/lib/cart';
+import { useLang } from '@/lib/lang-context';
 
 export default function AddToCartBox({
   product, available, heldAll,
 }: { product: any; available: number; heldAll: boolean }) {
   const [qty, setQty] = useState(1);
   const router = useRouter();
+  const { t } = useLang();
 
   if (product.stock <= 0) {
-    return <button className="btn btn-outline" disabled>Sold out</button>;
+    return <button className="btn btn-outline" disabled>{t('product.soldOut')}</button>;
   }
 
   if (heldAll) {
     return (
       <div>
         <div className="btn btn-outline" style={{ display: 'inline-block', color: 'var(--rose)', borderColor: 'var(--rose)' }} aria-disabled>
-          ติดจอง — สินค้าถูกจองไว้ทั้งหมด
+          {t('product.reservedTitle')}
         </div>
         <p style={{ fontSize: 12.5, color: '#8a8378', marginTop: 8 }}>
-          สินค้านี้กำลังรอการยืนยันการชำระเงินจากลูกค้าท่านอื่น หากรายการนั้นถูกยกเลิก สินค้าจะกลับมาให้สั่งซื้อได้อีกครั้ง
+          {t('product.reservedNote')}
         </p>
       </div>
     );
@@ -36,7 +38,7 @@ export default function AddToCartBox({
           <span style={{ width: 44, textAlign: 'center', display: 'inline-block' }}>{qty}</span>
           <button onClick={() => setQty((q) => Math.min(max, q + 1))} style={{ width: 34, height: 34, border: 'none', background: 'var(--paper-dim)' }}>+</button>
         </div>
-        <span style={{ fontSize: 13, color: '#8a8378' }}>เหลือ {max} ชิ้น (พร้อมสั่งซื้อ)</span>
+        <span style={{ fontSize: 13, color: '#8a8378' }}>{t('product.availableLeft', { n: max })}</span>
       </div>
       <button
         className="btn btn-primary"
@@ -46,7 +48,7 @@ export default function AddToCartBox({
           router.push('/cart');
         }}
       >
-        ใส่ตะกร้า
+        {t('product.addToCart')}
       </button>
     </div>
   );

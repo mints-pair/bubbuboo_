@@ -28,12 +28,12 @@ export default function GiveawayPage() {
 
   return (
     <div className="container">
-      <h1>ของแจก</h1>
+      <h1>{t('giveaway.heading')}</h1>
       <p style={{ color: '#8a8378', marginTop: -6, marginBottom: 20 }}>
-        สินค้าฟรี บางชิ้นมีค่าจัดส่ง บางชิ้นส่งฟรี — เช็คได้ที่หน้ารายละเอียดสินค้า
+        {t('giveaway.subheading')}
       </p>
       {!loading && products.length === 0 ? (
-        <p style={{ color: '#9a9490' }}>ยังไม่มีของแจกในตอนนี้</p>
+        <p style={{ color: '#9a9490' }}>{t('giveaway.empty')}</p>
       ) : (
         <div className="grid">
           {products.map((p) => {
@@ -47,9 +47,9 @@ export default function GiveawayPage() {
                 <div className="p-body">
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="p-price" style={{ color: 'var(--jade)' }}>ฟรี</span>
+                    <span className="p-price" style={{ color: 'var(--jade)' }}>{t('giveaway.free')}</span>
                     <span style={{ fontSize: 11, color: '#8a8378' }}>
-                      {p.shipping_fee > 0 ? `+ ค่าส่ง ฿${Number(p.shipping_fee).toLocaleString('th-TH')}` : '(ส่งฟรี)'}
+                      {p.shipping_fee > 0 ? t('giveaway.plusShipping', { n: Number(p.shipping_fee).toLocaleString('th-TH') }) : t('giveaway.freeShipping')}
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>

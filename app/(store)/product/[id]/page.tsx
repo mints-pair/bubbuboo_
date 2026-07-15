@@ -67,8 +67,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
         )}
         {p.is_giveaway ? (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--jade)', fontWeight: 700 }}>ฟรี</span>
-            <span style={{ fontSize: 12, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--jade)', fontWeight: 700 }}>{t('product.free')}</span>
+            <span style={{ fontSize: 12, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 8px', borderRadius: 99, fontWeight: 700 }}>{t('product.giveawayBadge')}</span>
           </div>
         ) : productDiscounted ? (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -89,11 +89,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
           {p.is_giveaway ? (
             p.shipping_fee > 0
               ? <>{t('product.shippingFee')} ฿{Number(p.shipping_fee).toLocaleString('th-TH')}</>
-              : <span style={{ color: 'var(--jade)', fontWeight: 700 }}>ไม่มีค่าจัดส่ง (ส่งฟรี)</span>
+              : <span style={{ color: 'var(--jade)', fontWeight: 700 }}>{t('product.noShippingFee')}</span>
           ) : freeShipLive ? (
             <>
               <span style={{ textDecoration: 'line-through', color: '#a89f92' }}>{t('product.shippingFee')} ฿{Number(p.shipping_fee).toLocaleString('th-TH')}</span>
-              {' '}<span style={{ color: 'var(--jade)', fontWeight: 700 }}>ส่งฟรี!</span>
+              {' '}<span style={{ color: 'var(--jade)', fontWeight: 700 }}>{t('product.freeShippingBadge')}</span>
             </>
           ) : (
             <>{t('product.shippingFee')} ฿{Number(p.shipping_fee).toLocaleString('th-TH')}</>

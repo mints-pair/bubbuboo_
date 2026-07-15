@@ -147,7 +147,7 @@ export default function CartPage() {
               <span>{t('cart.shippingFee')}</span>
               <span>
                 {freeShipLive && rawShippingFee > 0 && <span style={{ textDecoration: 'line-through', color: '#a89f92', marginRight: 6 }}>฿{rawShippingFee.toLocaleString('th-TH')}</span>}
-                ฿{shippingFee.toLocaleString('th-TH')}{freeShipLive ? ' (ฟรี!)' : ''}
+                ฿{shippingFee.toLocaleString('th-TH')}{freeShipLive ? t('cart.freeSuffix') : ''}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 19, borderTop: '1.5px dashed var(--line)', marginTop: 8, paddingTop: 12 }}><span>{t('cart.total')}</span><span>฿{total.toLocaleString('th-TH')}</span></div>

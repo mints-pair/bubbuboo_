@@ -53,7 +53,7 @@ export default function HomePage() {
           background: 'var(--marigold)', color: 'var(--ink)', borderRadius: 12, padding: '12px 16px',
           fontWeight: 600, fontSize: 14, marginBottom: 18, textAlign: 'center',
         }}>
-          {promo.label || (discountLive ? `ลดราคา${promo.discount_scope === 'selected' ? 'สินค้าที่ร่วมรายการ' : 'ทุกชิ้น'} ${promo.discount_percent}%` : '') || (freeShipLive ? 'ส่งฟรีทุกออเดอร์วันนี้!' : 'มีโปรโมชั่นพิเศษ')}
+          {promo.label || (discountLive ? t(promo.discount_scope === 'selected' ? 'home.promoDiscountSelected' : 'home.promoDiscountAll', { n: promo.discount_percent }) : '') || (freeShipLive ? t('home.promoFreeShipping') : t('home.promoGeneric'))}
         </div>
       )}
       <h1>{t('home.heading')}</h1>
@@ -102,7 +102,7 @@ export default function HomePage() {
                     <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
                   )}
                   <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
-                    {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ' · ส่งฟรี' : ''}
+                    {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ` · ${t('home.freeShippingBadge')}` : ''}
                   </div>
                 </div>
               </Link>

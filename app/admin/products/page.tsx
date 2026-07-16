@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 
@@ -15,6 +15,7 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [heldMap, setHeldMap] = useState<Record<string, number>>({});
+  const formRef = useRef<HTMLDivElement>(null);
 
   const members = categories.filter((c) => c.type === 'member');
   const events = categories.filter((c) => c.type === 'event');
@@ -100,6 +101,7 @@ export default function AdminProductsPage() {
       isGiveaway: !!p.is_giveaway,
       isFeatured: !!p.is_featured,
     });
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function deleteProduct(id: string) {
@@ -181,7 +183,7 @@ export default function AdminProductsPage() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card" ref={formRef}>
         <h3>{editingId ? 'แก้ไขสินค้า' : 'เพิ่มสินค้าใหม่'}</h3>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}>

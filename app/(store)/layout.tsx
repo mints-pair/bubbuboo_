@@ -75,7 +75,11 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
           <Link href="/" className="store-sidebar-link" style={{
             background: pathname === '/' ? 'var(--plum)' : 'transparent',
             color: pathname === '/' ? '#fff' : 'var(--ink)',
-          }}>{t('nav.home')}</Link>
+          }}>#ตลาดนัดGMMTV</Link>
+          <Link href="/dmd" className="store-sidebar-link" style={{
+            background: pathname === '/dmd' ? 'var(--plum)' : 'transparent',
+            color: pathname === '/dmd' ? '#fff' : 'var(--ink)',
+          }}>#ตลาดนัดDMD</Link>
           <Link href="/tracking" className="store-sidebar-link" style={{
             background: pathname === '/tracking' ? 'var(--plum)' : 'transparent',
             color: pathname === '/tracking' ? '#fff' : 'var(--ink)',

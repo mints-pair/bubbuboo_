@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 
-const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false };
+const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false, market: 'gmmtv' as 'gmmtv' | 'dmd' };
 
 export default function AdminProductsPage() {
   const supabase = createClient();
@@ -79,6 +79,7 @@ export default function AdminProductsPage() {
       event_id: draft.eventId || null,
       is_giveaway: draft.isGiveaway,
       is_featured: draft.isFeatured,
+      market: draft.market,
     };
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
@@ -100,6 +101,7 @@ export default function AdminProductsPage() {
       memberId: p.member_id || '', eventId: p.event_id || '',
       isGiveaway: !!p.is_giveaway,
       isFeatured: !!p.is_featured,
+      market: p.market || 'gmmtv',
     });
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -206,6 +208,20 @@ export default function AdminProductsPage() {
           <span style={{ fontWeight: 600 }}>ปักหมุดเป็นสินค้าแนะนำ (โชว์ในแถบแนะนำหน้าแรก)</span>
         </label>
 
+        <div className="field">
+          <label>ลงขายที่ตลาด</label>
+          <div style={{ display: 'flex', gap: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv' })} />
+              <span>#ตลาดนัดGMMTV</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd' })} />
+              <span>#ตลาดนัดDMD</span>
+            </label>
+          </div>
+        </div>
+
         <div className="field"><label>ชื่อสินค้า</label>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียดสินค้า</label>
@@ -267,7 +283,7 @@ export default function AdminProductsPage() {
         <h3>สินค้าทั้งหมด ({products.length})</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
-            <th></th><th></th><th>ชื่อ</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
+            <th></th><th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
           </tr></thead>
           <tbody>
             {products.map((p) => (
@@ -288,6 +304,7 @@ export default function AdminProductsPage() {
                 <td>{p.name}{p.is_giveaway && (
                   <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
                 )}</td>
+                <td style={{ fontSize: 12 }}>{p.market === 'dmd' ? '#DMD' : '#GMMTV'}</td>
                 <td>{nameOf(p.member_id)}</td>
                 <td>{nameOf(p.event_id)}</td>
                 <td>{p.is_giveaway ? 'ฟรี' : `฿${p.price}`}</td>

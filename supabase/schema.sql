@@ -224,3 +224,4 @@ alter table products add column if not exists category_id uuid references catego
 alter table products add column if not exists is_giveaway boolean not null default false;
 alter table products add column if not exists member_id uuid references categories(id) on delete set null;
 alter table products add column if not exists event_id uuid references categories(id) on delete set null;
+alter table products add column if not exists is_featured boolean not null default false;

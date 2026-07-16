@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 
-const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false };
+const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false };
 
 export default function AdminProductsPage() {
   const supabase = createClient();
@@ -77,6 +77,7 @@ export default function AdminProductsPage() {
       member_id: draft.memberId || null,
       event_id: draft.eventId || null,
       is_giveaway: draft.isGiveaway,
+      is_featured: draft.isFeatured,
     };
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
@@ -97,6 +98,7 @@ export default function AdminProductsPage() {
       stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [],
       memberId: p.member_id || '', eventId: p.event_id || '',
       isGiveaway: !!p.is_giveaway,
+      isFeatured: !!p.is_featured,
     });
   }
 
@@ -105,6 +107,13 @@ export default function AdminProductsPage() {
     const p = products.find((x) => x.id === id);
     await supabase.from('products').delete().eq('id', id);
     logAdminAction(`ลบสินค้า "${p?.name || id}"`);
+    load();
+  }
+
+  async function toggleFeatured(p: any) {
+    const next = !p.is_featured;
+    await supabase.from('products').update({ is_featured: next }).eq('id', p.id);
+    logAdminAction(`${next ? 'ปักหมุด' : 'เลิกปักหมุด'}สินค้าแนะนำ "${p.name}"`);
     load();
   }
 
@@ -185,6 +194,16 @@ export default function AdminProductsPage() {
           <span style={{ fontWeight: 600 }}>เป็นของแจก (ราคา 0 บาทอัตโนมัติ — ตั้งค่าจัดส่งเองได้ตามปกติ)</span>
         </label>
 
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={draft.isFeatured}
+            onChange={(e) => setDraft({ ...draft, isFeatured: e.target.checked })}
+            style={{ width: 18, height: 18 }}
+          />
+          <span style={{ fontWeight: 600 }}>ปักหมุดเป็นสินค้าแนะนำ (โชว์ในแถบแนะนำหน้าแรก)</span>
+        </label>
+
         <div className="field"><label>ชื่อสินค้า</label>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียดสินค้า</label>
@@ -246,11 +265,23 @@ export default function AdminProductsPage() {
         <h3>สินค้าทั้งหมด ({products.length})</h3>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
-            <th></th><th>ชื่อ</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
+            <th></th><th></th><th>ชื่อ</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
           </tr></thead>
           <tbody>
             {products.map((p) => (
               <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                <td>
+                  <button
+                    onClick={() => toggleFeatured(p)}
+                    title={p.is_featured ? 'เลิกปักหมุดสินค้าแนะนำ' : 'ปักหมุดเป็นสินค้าแนะนำ'}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer', fontSize: 18,
+                      color: p.is_featured ? 'var(--marigold-dark)' : '#d8d1c2',
+                    }}
+                  >
+                    {p.is_featured ? '★' : '☆'}
+                  </button>
+                </td>
                 <td><img src={p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                 <td>{p.name}{p.is_giveaway && (
                   <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>

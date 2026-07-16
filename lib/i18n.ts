@@ -18,6 +18,7 @@ export const translations: Record<Lang, any> = {
       promoGeneric: 'มีโปรโมชั่นพิเศษ',
       allMembers: 'ทุกเมมเบอร์',
       allEvents: 'ทุกอีเว้นท์',
+      featuredHeading: 'สินค้าแนะนำ',
     },
     product: {
       shippingFee: 'ค่าจัดส่ง',
@@ -117,6 +118,7 @@ export const translations: Record<Lang, any> = {
       promoGeneric: 'Special promotion running now',
       allMembers: 'All members',
       allEvents: 'All events',
+      featuredHeading: 'Featured products',
     },
     product: {
       shippingFee: 'Shipping fee',

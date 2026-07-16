@@ -38,6 +38,8 @@ export default function HomePage() {
 
   const members = categories.filter((c) => c.type === 'member');
   const events = categories.filter((c) => c.type === 'event');
+  const hasActiveFilter = !!(query.trim() || memberFilter || eventFilter);
+  const featuredProducts = products.filter((p) => p.is_featured);
 
   let filtered = products;
   if (memberFilter) filtered = filtered.filter((p) => p.member_id === memberFilter);
@@ -51,6 +53,34 @@ export default function HomePage() {
   const discountLive = isDiscountLive(promo);
   const freeShipLive = isFreeShippingLive(promo);
 
+  function renderCard(p: any) {
+    const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
+    let stockLabel = t('home.stockLeft', { n: available });
+    if (p.stock <= 0) stockLabel = t('home.soldOut');
+    else if (heldAll) stockLabel = t('home.reserved');
+    const productDiscounted = productHasDiscount(p.id, promo);
+    const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
+    return (
+      <Link key={p.id} href={`/product/${p.id}`} className="p-card">
+        <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
+        <div className="p-body">
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
+          {productDiscounted ? (
+            <div>
+              <span style={{ fontSize: 12.5, color: '#a89f92', textDecoration: 'line-through', marginRight: 6 }}>฿{Number(p.price).toLocaleString('th-TH')}</span>
+              <span className="p-price">฿{Number(finalPrice).toLocaleString('th-TH')}</span>
+            </div>
+          ) : (
+            <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
+          )}
+          <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
+            {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ` · ${t('home.freeShippingBadge')}` : ''}
+          </div>
+        </div>
+      </Link>
+    );
+  }
+
   return (
     <div className="container">
       {promoLive && (
@@ -61,6 +91,18 @@ export default function HomePage() {
           {promo.label || (discountLive ? t(promo.discount_scope === 'selected' ? 'home.promoDiscountSelected' : 'home.promoDiscountAll', { n: promo.discount_percent }) : '') || (freeShipLive ? t('home.promoFreeShipping') : t('home.promoGeneric'))}
         </div>
       )}
+
+      {!loading && !hasActiveFilter && featuredProducts.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18 }}>
+            <span style={{ color: 'var(--marigold-dark)' }}>★</span> {t('home.featuredHeading')}
+          </h2>
+          <div className="grid">
+            {featuredProducts.map((p) => renderCard(p))}
+          </div>
+        </div>
+      )}
+
       <h1>{t('home.heading')}</h1>
       <div style={{ display: 'flex', gap: 10, margin: '16px 0 22px', flexWrap: 'wrap' }}>
         <input
@@ -95,36 +137,10 @@ export default function HomePage() {
         )}
       </div>
       {!loading && filtered.length === 0 ? (
-        <p style={{ color: '#9a9490' }}>{query || memberFilter || eventFilter ? t('home.emptyNoResults') : t('home.emptyNoProducts')}</p>
+        <p style={{ color: '#9a9490' }}>{hasActiveFilter ? t('home.emptyNoResults') : t('home.emptyNoProducts')}</p>
       ) : (
         <div className="grid">
-          {filtered.map((p) => {
-            const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
-            let stockLabel = t('home.stockLeft', { n: available });
-            if (p.stock <= 0) stockLabel = t('home.soldOut');
-            else if (heldAll) stockLabel = t('home.reserved');
-            const productDiscounted = productHasDiscount(p.id, promo);
-            const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
-            return (
-              <Link key={p.id} href={`/product/${p.id}`} className="p-card">
-                <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
-                <div className="p-body">
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
-                  {productDiscounted ? (
-                    <div>
-                      <span style={{ fontSize: 12.5, color: '#a89f92', textDecoration: 'line-through', marginRight: 6 }}>฿{Number(p.price).toLocaleString('th-TH')}</span>
-                      <span className="p-price">฿{Number(finalPrice).toLocaleString('th-TH')}</span>
-                    </div>
-                  ) : (
-                    <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
-                  )}
-                  <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
-                    {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ` · ${t('home.freeShippingBadge')}` : ''}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {filtered.map((p) => renderCard(p))}
         </div>
       )}
     </div>

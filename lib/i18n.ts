@@ -16,6 +16,8 @@ export const translations: Record<Lang, any> = {
       promoDiscountSelected: 'ลดราคาสินค้าที่ร่วมรายการ {n}%',
       promoFreeShipping: 'ส่งฟรีทุกออเดอร์วันนี้!',
       promoGeneric: 'มีโปรโมชั่นพิเศษ',
+      allMembers: 'ทุกเมมเบอร์',
+      allEvents: 'ทุกอีเว้นท์',
     },
     product: {
       shippingFee: 'ค่าจัดส่ง',
@@ -113,6 +115,8 @@ export const translations: Record<Lang, any> = {
       promoDiscountSelected: '{n}% off selected items',
       promoFreeShipping: 'Free shipping today!',
       promoGeneric: 'Special promotion running now',
+      allMembers: 'All members',
+      allEvents: 'All events',
     },
     product: {
       shippingFee: 'Shipping fee',

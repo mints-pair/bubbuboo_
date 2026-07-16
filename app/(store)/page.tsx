@@ -14,7 +14,8 @@ export default function HomePage() {
   const [heldMap, setHeldMap] = useState<Record<string, number>>({});
   const [promo, setPromo] = useState<any>(null);
   const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [memberFilter, setMemberFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,8 +36,12 @@ export default function HomePage() {
     setLoading(false);
   }
 
+  const members = categories.filter((c) => c.type === 'member');
+  const events = categories.filter((c) => c.type === 'event');
+
   let filtered = products;
-  if (categoryFilter) filtered = filtered.filter((p) => p.category_id === categoryFilter);
+  if (memberFilter) filtered = filtered.filter((p) => p.member_id === memberFilter);
+  if (eventFilter) filtered = filtered.filter((p) => p.event_id === eventFilter);
   if (query.trim()) {
     const q = query.trim().toLowerCase();
     filtered = filtered.filter((p) => (p.name + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(q));
@@ -64,21 +69,33 @@ export default function HomePage() {
           placeholder={t('home.searchPlaceholder')}
           style={{ flex: 1, minWidth: 200, padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)', fontSize: 14.5 }}
         />
-        {categories.length > 0 && (
+        {members.length > 0 && (
           <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
+            value={memberFilter}
+            onChange={(e) => setMemberFilter(e.target.value)}
             style={{ padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)', fontSize: 14.5, background: '#fff' }}
           >
-            <option value="">ทุกหมวดหมู่</option>
-            {categories.map((c) => (
+            <option value="">{t('home.allMembers')}</option>
+            {members.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        )}
+        {events.length > 0 && (
+          <select
+            value={eventFilter}
+            onChange={(e) => setEventFilter(e.target.value)}
+            style={{ padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)', fontSize: 14.5, background: '#fff' }}
+          >
+            <option value="">{t('home.allEvents')}</option>
+            {events.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         )}
       </div>
       {!loading && filtered.length === 0 ? (
-        <p style={{ color: '#9a9490' }}>{query || categoryFilter ? t('home.emptyNoResults') : t('home.emptyNoProducts')}</p>
+        <p style={{ color: '#9a9490' }}>{query || memberFilter || eventFilter ? t('home.emptyNoResults') : t('home.emptyNoProducts')}</p>
       ) : (
         <div className="grid">
           {filtered.map((p) => {

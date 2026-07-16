@@ -10,7 +10,8 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const { t } = useLang();
   const [p, setP] = useState<any>(null);
-  const [categoryName, setCategoryName] = useState('');
+  const [memberName, setMemberName] = useState('');
+  const [eventName, setEventName] = useState('');
   const [available, setAvailable] = useState(0);
   const [heldAll, setHeldAll] = useState(false);
   const [promo, setPromo] = useState<any>(null);
@@ -24,11 +25,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     setLoading(true);
     const { data: product } = await supabase.from('products').select('*').eq('id', params.id).single();
     setP(product);
-    if (product?.category_id) {
-      const { data: cat } = await supabase.from('categories').select('name').eq('id', product.category_id).single();
-      setCategoryName(cat?.name || '');
+    const ids = [product?.member_id, product?.event_id].filter(Boolean);
+    if (ids.length) {
+      const { data: cats } = await supabase.from('categories').select('id, name').in('id', ids);
+      setMemberName(cats?.find((c) => c.id === product?.member_id)?.name || '');
+      setEventName(cats?.find((c) => c.id === product?.event_id)?.name || '');
     } else {
-      setCategoryName('');
+      setMemberName('');
+      setEventName('');
     }
     if (product) {
       const { data: held } = await supabase.rpc('held_stock');
@@ -60,10 +64,19 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       </div>
       <div style={{ flex: 1, minWidth: 260 }}>
         <h1>{p.name}</h1>
-        {categoryName && (
-          <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--paper-dim)', color: '#8a8378', padding: '3px 10px', borderRadius: 99, marginBottom: 8 }}>
-            {categoryName}
-          </span>
+        {(memberName || eventName) && (
+          <div style={{ marginBottom: 8 }}>
+            {memberName && (
+              <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--jade-light)', color: 'var(--jade)', padding: '3px 10px', borderRadius: 99, marginRight: 6 }}>
+                {memberName}
+              </span>
+            )}
+            {eventName && (
+              <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--marigold)', color: 'var(--ink)', padding: '3px 10px', borderRadius: 99 }}>
+                {eventName}
+              </span>
+            )}
+          </div>
         )}
         {p.is_giveaway ? (
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>

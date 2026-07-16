@@ -209,6 +209,7 @@ create policy "admin manage promotion" on promotion
 create table if not exists categories (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
+  type text not null default 'member' check (type in ('member', 'event')),
   created_at timestamptz not null default now()
 );
 alter table categories enable row level security;
@@ -221,3 +222,5 @@ create policy "admin manage categories" on categories
 
 alter table products add column if not exists category_id uuid references categories(id) on delete set null;
 alter table products add column if not exists is_giveaway boolean not null default false;
+alter table products add column if not exists member_id uuid references categories(id) on delete set null;
+alter table products add column if not exists event_id uuid references categories(id) on delete set null;

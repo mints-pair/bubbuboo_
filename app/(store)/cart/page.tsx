@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getCart, removeFromCart, clearCart, CartLine } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
-import { isDiscountLive, isFreeShippingLive, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
+import { isDiscountLive, isFreeShippingLive, isFreeShippingEnabled, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
 type Step = 'cart' | 'payment' | 'done';
 
@@ -39,7 +39,6 @@ export default function CartPage() {
   }, []);
 
   const discountLive = isDiscountLive(promo);
-  const freeShipLive = isFreeShippingLive(promo);
 
   const lines = cart.map((l) => ({ ...l, product: products[l.productId] })).filter((l) => l.product);
   const subtotalOriginal = lines.reduce((a: number, l: any) => a + l.product.price * l.qty, 0);
@@ -48,8 +47,11 @@ export default function CartPage() {
     return a + unitPrice * l.qty;
   }, 0);
   const rawShippingFee = lines.reduce((max: number, l: any) => Math.max(max, l.product.shipping_fee || 0), 0);
-  const shippingFee = effectiveShippingFee(rawShippingFee, promo);
+  const freeShipLive = isFreeShippingLive(promo, subtotal);
+  const shippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
   const total = subtotal + shippingFee;
+  const freeShipMin = promo?.free_shipping_min_amount || 0;
+  const freeShipAmountAway = isFreeShippingEnabled(promo) && !freeShipLive && freeShipMin > 0 ? freeShipMin - subtotal : 0;
 
   async function goToPayment() {
     if (!contact.xAccount || !contact.name || !contact.address || !contact.phone) {
@@ -151,6 +153,11 @@ export default function CartPage() {
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 19, borderTop: '1.5px dashed var(--line)', marginTop: 8, paddingTop: 12 }}><span>{t('cart.total')}</span><span>฿{total.toLocaleString('th-TH')}</span></div>
+            {freeShipAmountAway > 0 && (
+              <p style={{ fontSize: 12.5, color: 'var(--jade)', marginTop: 8, textAlign: 'right' }}>
+                {t('cart.freeShipAwayHint', { n: freeShipAmountAway.toLocaleString('th-TH') })}
+              </p>
+            )}
           </div>
 
           <div className="card">

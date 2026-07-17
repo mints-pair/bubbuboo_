@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
-import { isPromotionLive, isDiscountLive, isFreeShippingLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
+import { isPromotionLive, isDiscountLive, isFreeShippingUnconditional, isFreeShippingEnabled, discountedPrice, productHasDiscount } from '@/lib/promotion';
 
 export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd'; heading: string }) {
   const supabase = createClient();
@@ -52,7 +52,9 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
 
   const promoLive = isPromotionLive(promo);
   const discountLive = isDiscountLive(promo);
-  const freeShipLive = isFreeShippingLive(promo);
+  const freeShipLive = isFreeShippingUnconditional(promo);
+  const freeShipEnabled = isFreeShippingEnabled(promo);
+  const freeShipMin = promo?.free_shipping_min_amount || 0;
 
   function renderCard(p: any) {
     const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
@@ -89,7 +91,7 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
           background: 'var(--marigold)', color: 'var(--ink)', borderRadius: 12, padding: '12px 16px',
           fontWeight: 600, fontSize: 14, marginBottom: 18, textAlign: 'center',
         }}>
-          {promo.label || (discountLive ? t(promo.discount_scope === 'selected' ? 'home.promoDiscountSelected' : 'home.promoDiscountAll', { n: promo.discount_percent }) : '') || (freeShipLive ? t('home.promoFreeShipping') : t('home.promoGeneric'))}
+          {promo.label || (discountLive ? t(promo.discount_scope === 'selected' ? 'home.promoDiscountSelected' : 'home.promoDiscountAll', { n: promo.discount_percent }) : '') || (freeShipEnabled ? (freeShipMin > 0 ? t('home.promoFreeShippingThreshold', { n: freeShipMin.toLocaleString('th-TH') }) : t('home.promoFreeShipping')) : t('home.promoGeneric'))}
         </div>
       )}
 

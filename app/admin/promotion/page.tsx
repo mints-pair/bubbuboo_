@@ -11,6 +11,7 @@ const DEFAULT_PROMO = {
   discount_scope: 'all' as 'all' | 'selected',
   discount_product_ids: [] as string[],
   free_shipping_active: false,
+  free_shipping_min_amount: 0,
   label: '',
   start_at: null as string | null,
   end_at: null as string | null,
@@ -48,6 +49,7 @@ export default function AdminPromotionPage() {
       discount_scope: payload.discount_scope,
       discount_product_ids: payload.discount_product_ids,
       free_shipping_active: payload.free_shipping_active,
+      free_shipping_min_amount: Number(payload.free_shipping_min_amount) || 0,
       label: payload.label,
       start_at: payload.start_at || null,
       end_at: payload.end_at || null,
@@ -154,9 +156,19 @@ export default function AdminPromotionPage() {
       <div style={{ borderTop: '1px dashed var(--line)', paddingTop: 16, marginBottom: 16 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
           <input type="checkbox" checked={promo.free_shipping_active} onChange={(e) => setPromo({ ...promo, free_shipping_active: e.target.checked })} style={{ width: 18, height: 18 }} />
-          <span style={{ fontWeight: 600 }}>ส่งฟรีทุกออเดอร์</span>
+          <span style={{ fontWeight: 600 }}>ส่งฟรี</span>
         </label>
-        <p style={{ fontSize: 12.5, color: '#8a8378', marginTop: 6, marginLeft: 28 }}>ส่งฟรีเป็นแบบทั้งออเดอร์เท่านั้น เลือกเฉพาะบางชิ้นไม่ได้ (เพราะค่าส่งคิดต่อคำสั่งซื้อ)</p>
+        <p style={{ fontSize: 12.5, color: '#8a8378', marginTop: 6, marginBottom: 10, marginLeft: 28 }}>ส่งฟรีเป็นแบบทั้งออเดอร์เท่านั้น เลือกเฉพาะบางชิ้นไม่ได้ (เพราะค่าส่งคิดต่อคำสั่งซื้อ)</p>
+        {promo.free_shipping_active && (
+          <div className="field" style={{ marginLeft: 28, maxWidth: 220 }}>
+            <label>ยอดขั้นต่ำ (บาท)</label>
+            <input type="number" min={0} value={promo.free_shipping_min_amount} onChange={(e) => setPromo({ ...promo, free_shipping_min_amount: e.target.value })} placeholder="0" />
+            <p style={{ fontSize: 12, color: '#8a8378', marginTop: 6 }}>
+              เว้นว่างหรือใส่ 0 = ส่งฟรีทุกออเดอร์ไม่มีเงื่อนไข<br />
+              ใส่ตัวเลข = ส่งฟรีเฉพาะออเดอร์ที่ยอดสินค้าถึงจำนวนนี้ขึ้นไป
+            </p>
+          </div>
+        )}
       </div>
 
       <div style={{ borderTop: '1px dashed var(--line)', paddingTop: 16, marginBottom: 20 }}>

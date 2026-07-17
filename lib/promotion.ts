@@ -5,6 +5,7 @@ export type Promotion = {
   discount_scope: 'all' | 'selected';
   discount_product_ids: string[];
   free_shipping_active: boolean;
+  free_shipping_min_amount: number;
   label: string;
   start_at: string | null;
   end_at: string | null;
@@ -26,8 +27,25 @@ export function isDiscountLive(promo: Promotion | null | undefined): boolean {
   return isPromotionLive(promo) && !!promo?.discount_active && (promo?.discount_percent || 0) > 0;
 }
 
-export function isFreeShippingLive(promo: Promotion | null | undefined): boolean {
+// Is free shipping switched on at all, regardless of any minimum-spend
+// threshold? Use this for badges/copy that don't know the cart subtotal yet.
+export function isFreeShippingEnabled(promo: Promotion | null | undefined): boolean {
   return isPromotionLive(promo) && !!promo?.free_shipping_active;
+}
+
+// Is free shipping switched on AND has no minimum-spend requirement?
+// Safe to use for per-product "free shipping" badges (no cart context needed).
+export function isFreeShippingUnconditional(promo: Promotion | null | undefined): boolean {
+  return isFreeShippingEnabled(promo) && !((promo?.free_shipping_min_amount || 0) > 0);
+}
+
+// Does free shipping actually apply RIGHT NOW, given this cart subtotal?
+// (accounts for the minimum-spend threshold, if one is set)
+export function isFreeShippingLive(promo: Promotion | null | undefined, subtotal: number): boolean {
+  if (!isFreeShippingEnabled(promo)) return false;
+  const minAmount = promo?.free_shipping_min_amount || 0;
+  if (minAmount > 0 && subtotal < minAmount) return false;
+  return true;
 }
 
 // Does THIS specific product currently get the discount?
@@ -46,7 +64,7 @@ export function discountedPrice(productId: string, price: number, promo: Promoti
   return Math.round(price * (1 - pct / 100) * 100) / 100;
 }
 
-export function effectiveShippingFee(fee: number, promo: Promotion | null | undefined): number {
-  if (isFreeShippingLive(promo)) return 0;
+export function effectiveShippingFee(fee: number, promo: Promotion | null | undefined, subtotal: number): number {
+  if (isFreeShippingLive(promo, subtotal)) return 0;
   return fee;
 }

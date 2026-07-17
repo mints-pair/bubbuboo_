@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
-import { isDiscountLive, isFreeShippingLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
+import { isDiscountLive, isFreeShippingUnconditional, isFreeShippingEnabled, isPromotionLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
 import AddToCartBox from './AddToCartBox';
 
 export default function ProductPage({ params }: { params: { id: string } }) {
@@ -50,7 +50,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   if (!p) return <div className="container">{t('product.notFound')}</div>;
 
   const productDiscounted = productHasDiscount(p.id, promo);
-  const freeShipLive = isFreeShippingLive(promo);
+  const freeShipLive = isFreeShippingUnconditional(promo);
   const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
 
   return (
@@ -112,6 +112,11 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             <>{t('product.shippingFee')} ฿{Number(p.shipping_fee).toLocaleString('th-TH')}</>
           )}
         </div>
+        {!p.is_giveaway && !freeShipLive && isFreeShippingEnabled(promo) && (promo.free_shipping_min_amount || 0) > 0 && (
+          <p style={{ fontSize: 12.5, color: 'var(--jade)', marginTop: -10, marginBottom: 14 }}>
+            {t('product.freeShipThreshold', { n: Number(promo.free_shipping_min_amount).toLocaleString('th-TH') })}
+          </p>
+        )}
         <p style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{p.description}</p>
         <AddToCartBox product={p} available={available} heldAll={heldAll} />
       </div>

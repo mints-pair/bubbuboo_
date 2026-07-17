@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { sendAdminTelegramMessage } from '@/lib/telegram';
-import { isFreeShippingLive, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
+import { discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
   const subtotal = orderItems.reduce((a: number, it: any) => a + it.price * it.qty, 0);
   const rawShippingFee = products.reduce((max: number, p: any) => Math.max(max, p.shipping_fee || 0), 0);
-  const shippingFee = effectiveShippingFee(rawShippingFee, promo);
+  const shippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
   const total = subtotal + shippingFee;
 
   // 2. atomically get the next PW-YYMMxxx order number

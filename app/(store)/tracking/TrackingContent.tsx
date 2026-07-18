@@ -41,7 +41,21 @@ export default function TrackingContent() {
         <button className="btn btn-primary" onClick={search}>{t('tracking.checkStatus')}</button>
       </div>
 
-      {order && (
+      {order && order.status === 'cancelled' ? (
+        <div className="card" style={{ maxWidth: 500 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 10 }}>{order.order_number}</div>
+          <span style={{
+            display: 'inline-block', fontSize: 12.5, fontWeight: 700, padding: '4px 10px', borderRadius: 99,
+            background: '#F3E0DC', color: 'var(--rose)', marginBottom: 14,
+          }}>{t('tracking.cancelled')}</span>
+          <p style={{ fontSize: 13.5, color: '#8a8378' }}>{t('tracking.cancelledNote')}</p>
+          {order.cancel_reason && (
+            <div style={{ background: 'var(--paper-dim)', borderRadius: 9, padding: '10px 12px', marginTop: 10 }}>
+              <b style={{ fontSize: 13 }}>{t('tracking.cancelReasonLabel')}:</b> <span style={{ fontSize: 13.5 }}>{order.cancel_reason}</span>
+            </div>
+          )}
+        </div>
+      ) : order && (
         <div className="card" style={{ maxWidth: 500 }}>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 14 }}>{order.order_number}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>

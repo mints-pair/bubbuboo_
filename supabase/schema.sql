@@ -52,6 +52,7 @@ create table if not exists orders (
   slip_image text,
   tracking_code text not null,              -- 6-digit code the customer sets
   shipping jsonb,                           -- { trackingNumber, carrier, date }
+  cancel_reason text,                       -- set when status = 'cancelled' (admin rejected the order)
   created_at timestamptz not null default now()
 );
 

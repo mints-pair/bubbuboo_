@@ -84,6 +84,9 @@ export const translations: Record<Lang, any> = {
       stepConfirmed: 'ยืนยันแล้ว',
       stepShipping: 'กำลังจัดส่ง',
       stepReceived: 'ได้รับแล้ว',
+      cancelled: 'ออเดอร์ถูกยกเลิก',
+      cancelledNote: 'ออเดอร์นี้ถูกปฏิเสธโดยแอดมิน หากมีข้อสงสัยสามารถติดต่อร้านได้',
+      cancelReasonLabel: 'สาเหตุ',
     },
     giveaway: {
       heading: 'ของแจก',
@@ -187,6 +190,9 @@ export const translations: Record<Lang, any> = {
       stepConfirmed: 'Confirmed',
       stepShipping: 'Shipping',
       stepReceived: 'Received',
+      cancelled: 'Order cancelled',
+      cancelledNote: 'This order was declined by the admin. Contact the shop if you have questions.',
+      cancelReasonLabel: 'Reason',
     },
     giveaway: {
       heading: 'Giveaway',

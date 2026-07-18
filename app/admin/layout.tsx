@@ -48,6 +48,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/orders/pending', label: `คำสั่งซื้อรอการคอนเฟิร์ม${pendingCount ? ` (${pendingCount})` : ''}` },
     { href: '/admin/orders/ship', label: `คำสั่งซื้อรอการส่ง${shipCount ? ` (${shipCount})` : ''}` },
     { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },
+    { href: '/admin/orders/cancelled', label: 'ออเดอร์ที่ถูกปฏิเสธ' },
     { href: '/admin/members', label: 'ระบบสมาชิก' },
     { href: '/admin/promotion', label: 'โปรโมชั่น' },
     { href: '/admin/settings', label: 'ตั้งค่าร้าน' },

@@ -8,7 +8,7 @@ export async function GET(req: Request, { params }: { params: { orderNumber: str
   const supabase = createAdminSupabase();
   const { data: order } = await supabase
     .from('orders')
-    .select('order_number, status, items, total, shipping')
+    .select('order_number, status, items, total, shipping, cancel_reason')
     .eq('order_number', params.orderNumber)
     .single();
 

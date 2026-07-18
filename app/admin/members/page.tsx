@@ -13,6 +13,7 @@ export default function MembersPage() {
   if (members.length === 0) return <p>ยังไม่มีข้อมูลสมาชิก (จะถูกสร้างอัตโนมัติเมื่อคอนเฟิร์มคำสั่งซื้อ)</p>;
 
   return (
+    <div className="table-scroll">
     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
       <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
         <th>ชื่อ</th><th>เบอร์โทร</th><th>ที่อยู่</th><th>จำนวนออเดอร์</th><th>ยอดซื้อสะสม</th>
@@ -29,5 +30,6 @@ export default function MembersPage() {
         ))}
       </tbody>
     </table>
+    </div>
   );
 }

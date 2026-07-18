@@ -114,7 +114,7 @@ export default function AdminPromotionPage() {
 
             <div className="field">
               <label>ใช้กับสินค้า</label>
-              <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input type="radio" checked={promo.discount_scope === 'all'} onChange={() => setPromo({ ...promo, discount_scope: 'all' })} />
                   <span>ทุกชิ้นในร้าน</span>
@@ -174,7 +174,7 @@ export default function AdminPromotionPage() {
       <div style={{ borderTop: '1px dashed var(--line)', paddingTop: 16, marginBottom: 20 }}>
         <div className="field"><label>ข้อความแบนเนอร์ (โชว์บนหน้าร้าน ไม่ใส่ก็ได้)</label>
           <input value={promo.label} onChange={(e) => setPromo({ ...promo, label: e.target.value })} placeholder="เช่น ลดราคาทุกชิ้น 10% ถึงสิ้นเดือนนี้!" /></div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="field-row">
           <div className="field" style={{ flex: 1 }}><label>วันเริ่ม (ไม่บังคับ)</label>
             <input type="datetime-local" value={toLocalInputValue(promo.start_at)} onChange={(e) => setPromo({ ...promo, start_at: e.target.value ? new Date(e.target.value).toISOString() : null })} /></div>
           <div className="field" style={{ flex: 1 }}><label>วันสิ้นสุด (ไม่บังคับ)</label>

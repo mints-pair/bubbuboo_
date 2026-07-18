@@ -226,7 +226,7 @@ export default function AdminProductsPage() {
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียดสินค้า</label>
           <textarea rows={3} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="field-row">
           <div className="field" style={{ flex: 1 }}><label>เมมเบอร์</label>
             <select
               value={draft.memberId}
@@ -248,7 +248,7 @@ export default function AdminProductsPage() {
             </select>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="field-row">
           <div className="field" style={{ flex: 1 }}><label>ราคา (บาท)</label>
             <input type="number" disabled={draft.isGiveaway} value={draft.isGiveaway ? 0 : draft.price} onChange={(e) => setDraft({ ...draft, price: e.target.value })}
               style={draft.isGiveaway ? { background: 'var(--paper-dim)', color: '#8a8378' } : undefined} /></div>
@@ -281,6 +281,7 @@ export default function AdminProductsPage() {
 
       <div className="card">
         <h3>สินค้าทั้งหมด ({products.length})</h3>
+        <div className="table-scroll">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
             <th></th><th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
@@ -318,6 +319,7 @@ export default function AdminProductsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ export default function AdminLogsPage() {
         <p style={{ color: '#9a9490' }}>ยังไม่มีบันทึกการใช้งาน</p>
       ) : (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div className="table-scroll">
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
             <thead>
               <tr style={{ textAlign: 'left', color: '#8a8378', background: 'var(--paper-dim)' }}>
@@ -47,6 +48,7 @@ export default function AdminLogsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

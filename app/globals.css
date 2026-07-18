@@ -113,7 +113,10 @@ input, textarea, select { font-family: var(--font-body); }
   .store-header-inner { padding: 12px 16px; gap: 8px; }
   .store-brand span { font-size: 16px !important; }
   .store-header-actions { width: 100%; justify-content: flex-start; }
-  .store-header-actions .btn { padding: 8px 12px; font-size: 13px; flex: 1 1 auto; text-align: center; }
+  .store-header-actions .btn,
+  .store-header-actions button:not(.btn),
+  .store-header-actions a:not(.btn) { padding: 8px 12px; font-size: 13px; }
+  .store-header-actions > a.btn { flex: 1 1 auto; text-align: center; }
   .store-body-wrap { flex-direction: column; }
   .store-sidebar {
     width: 100%;
@@ -126,4 +129,16 @@ input, textarea, select { font-family: var(--font-body); }
   }
   .store-sidebar-link { margin-bottom: 0; white-space: nowrap; }
   .container { padding: 18px 16px 50px; }
+}
+
+/* ---------- Reusable responsive helpers (admin + storefront forms/tables) ---------- */
+.field-row { display: flex; gap: 12px; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; padding: 0 2px; }
+.table-scroll table { min-width: 620px; }
+
+@media (max-width: 640px) {
+  .field-row { flex-direction: column; gap: 0; }
+  .card { padding: 16px; }
+  h1 { font-size: 22px; }
+  h2 { font-size: 18px; }
 }

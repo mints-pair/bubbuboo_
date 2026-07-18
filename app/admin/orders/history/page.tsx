@@ -97,7 +97,7 @@ export default function HistoryPage() {
               </>
             ) : (
               <>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="field-row">
                   <div className="field" style={{ flex: 1 }}><label>เลขพัสดุ</label>
                     <input value={f.trackingNumber} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, trackingNumber: e.target.value } })} /></div>
                   <div className="field" style={{ flex: 1 }}><label>บริการขนส่ง</label>

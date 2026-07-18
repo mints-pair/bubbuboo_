@@ -59,7 +59,7 @@ export default function PendingShipPage() {
           <div key={o.order_number} className="card" style={{ marginTop: 16 }}>
             <b style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>{o.order_number}</b>
             <div style={{ color: '#8a8378', margin: '8px 0' }}>ส่งถึง: {o.contact.name} — {o.contact.address} · {o.contact.phone}</div>
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="field-row">
               <div className="field" style={{ flex: 1 }}><label>เลขพัสดุ</label>
                 <input value={f.trackingNumber} onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, trackingNumber: e.target.value } })} /></div>
               <div className="field" style={{ flex: 1 }}><label>บริการขนส่ง</label>

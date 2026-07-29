@@ -2,14 +2,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
 
 export default function GiveawayPage() {
   const supabase = createClient();
   const { t } = useLang();
   const [products, setProducts] = useState<any[]>([]);
-  const [heldMap, setHeldMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,10 +17,6 @@ export default function GiveawayPage() {
   async function load() {
     const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', true).order('created_at', { ascending: false });
     setProducts(p || []);
-    const { data: held } = await supabase.rpc('held_stock');
-    const map: Record<string, number> = {};
-    (held || []).forEach((row: any) => { map[row.product_id] = Number(row.held_qty); });
-    setHeldMap(map);
     setLoading(false);
   }
 
@@ -37,10 +31,7 @@ export default function GiveawayPage() {
       ) : (
         <div className="grid">
           {products.map((p) => {
-            const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
-            let stockLabel = t('home.stockLeft', { n: available });
-            if (p.stock <= 0) stockLabel = t('home.soldOut');
-            else if (heldAll) stockLabel = t('home.reserved');
+            const stockLabel = p.stock > 0 ? t('home.stockLeft', { n: p.stock }) : t('home.soldOut');
             return (
               <Link key={p.id} href={`/product/${p.id}`} className="p-card">
                 <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
@@ -52,7 +43,7 @@ export default function GiveawayPage() {
                       {p.shipping_fee > 0 ? t('giveaway.plusShipping', { n: Number(p.shipping_fee).toLocaleString('th-TH') }) : t('giveaway.freeShipping')}
                     </span>
                   </div>
-                  <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
+                  <div style={{ fontSize: 11, color: p.stock <= 0 ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
                     {stockLabel}
                   </div>
                 </div>

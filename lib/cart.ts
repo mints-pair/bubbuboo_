@@ -31,3 +31,16 @@ export function removeFromCart(productId: string) {
 export function clearCart() {
   saveCart([]);
 }
+
+// A stable per-browser id used to tie temporary 10-minute payment-step
+// reservations to "this shopper", without requiring login.
+const SESSION_KEY = 'shop_cart_session_v1';
+export function getCartSessionId(): string {
+  if (typeof window === 'undefined') return '';
+  let id = localStorage.getItem(SESSION_KEY);
+  if (!id) {
+    id = (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(SESSION_KEY, id);
+  }
+  return id;
+}

@@ -228,3 +228,43 @@ alter table products add column if not exists member_id uuid references categori
 alter table products add column if not exists event_id uuid references categories(id) on delete set null;
 alter table products add column if not exists is_featured boolean not null default false;
 alter table products add column if not exists market text not null default 'gmmtv' check (market in ('gmmtv', 'dmd'));
+
+-- ============================================================
+-- CART RESERVATIONS (10-minute hold, starts when a customer reaches the
+-- payment step — NOT when they add to cart). Only accessed via service-role
+-- API routes, so no public/authenticated RLS policies are needed.
+-- ============================================================
+create table if not exists cart_reservations (
+  id uuid primary key default gen_random_uuid(),
+  session_id text not null,
+  product_id uuid not null references products(id) on delete cascade,
+  qty int not null,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists cart_reservations_product_idx on cart_reservations(product_id);
+create index if not exists cart_reservations_session_idx on cart_reservations(session_id);
+alter table cart_reservations enable row level security;
+
+-- held_stock() now also counts active (non-expired) reservations, not just
+-- pending orders, so the storefront/admin "held" numbers include people
+-- currently sitting on the payment page with an active 10-minute hold.
+create or replace function held_stock()
+returns table(product_id uuid, held_qty bigint)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select combined.product_id, sum(combined.qty)::bigint as held_qty
+  from (
+    select (item->>'productId')::uuid as product_id, (item->>'qty')::int as qty
+    from orders, jsonb_array_elements(items) as item
+    where status = 'pending'
+    union all
+    select product_id, qty from cart_reservations where expires_at > now()
+  ) combined
+  group by combined.product_id;
+$$;
+
+grant execute on function held_stock() to anon, authenticated;

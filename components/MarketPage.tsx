@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
 import { isPromotionLive, isDiscountLive, isFreeShippingUnconditional, isFreeShippingEnabled, discountedPrice, productHasDiscount } from '@/lib/promotion';
 
@@ -11,7 +10,6 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
   const { t } = useLang();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [heldMap, setHeldMap] = useState<Record<string, number>>({});
   const [promo, setPromo] = useState<any>(null);
   const [query, setQuery] = useState('');
   const [memberFilter, setMemberFilter] = useState('');
@@ -28,10 +26,6 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
     setProducts(p || []);
     const { data: c } = await supabase.from('categories').select('*').order('name', { ascending: true });
     setCategories(c || []);
-    const { data: held } = await supabase.rpc('held_stock');
-    const map: Record<string, number> = {};
-    (held || []).forEach((row: any) => { map[row.product_id] = Number(row.held_qty); });
-    setHeldMap(map);
     const { data: promoData } = await supabase.from('promotion').select('*').single();
     setPromo(promoData);
     setLoading(false);
@@ -57,10 +51,11 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
   const freeShipMin = promo?.free_shipping_min_amount || 0;
 
   function renderCard(p: any) {
-    const { available, heldAll } = computeAvailability(p.stock, heldMap[p.id] || 0);
-    let stockLabel = t('home.stockLeft', { n: available });
-    if (p.stock <= 0) stockLabel = t('home.soldOut');
-    else if (heldAll) stockLabel = t('home.reserved');
+    // Browsing/adding to cart only ever looks at real stock — a 10-minute
+    // payment-step hold never blocks other shoppers from adding the same
+    // item to their own cart (it only blocks them from completing payment
+    // if someone else's hold wins the race first).
+    const stockLabel = p.stock > 0 ? t('home.stockLeft', { n: p.stock }) : t('home.soldOut');
     const productDiscounted = productHasDiscount(p.id, promo);
     const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
     return (
@@ -76,8 +71,8 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
           ) : (
             <div className="p-price">฿{Number(p.price).toLocaleString('th-TH')}</div>
           )}
-          <div style={{ fontSize: 11, color: p.stock <= 0 || heldAll ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
-            {stockLabel}{freeShipLive && p.stock > 0 && !heldAll ? ` · ${t('home.freeShippingBadge')}` : ''}
+          <div style={{ fontSize: 11, color: p.stock <= 0 ? 'var(--rose)' : '#8a8a8a', marginTop: 3 }}>
+            {stockLabel}{freeShipLive && p.stock > 0 ? ` · ${t('home.freeShippingBadge')}` : ''}
           </div>
         </div>
       </Link>

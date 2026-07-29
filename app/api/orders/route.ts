@@ -5,7 +5,7 @@ import { discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { items, contact, trackingCode, slipImage } = body;
+  const { items, contact, trackingCode, slipImage, sessionId } = body;
 
   if (!items?.length || !contact?.xAccount || !contact?.name || !contact?.address || !contact?.phone) {
     return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
@@ -24,6 +24,16 @@ export async function POST(req: Request) {
 
   if (!products || products.length !== productIds.length) {
     return NextResponse.json({ error: 'พบสินค้าที่ไม่ถูกต้องในตะกร้า' }, { status: 400 });
+  }
+
+  // basic sanity floor — never let an order ask for more than physically
+  // exists, independent of anyone's hold (the /api/reservations step is
+  // what actually arbitrates contention between shoppers before this point)
+  for (const item of items) {
+    const p = products.find((x: any) => x.id === item.productId)!;
+    if (item.qty > p.stock) {
+      return NextResponse.json({ error: `สินค้า "${p.name}" มีไม่เพียงพอแล้ว` }, { status: 409 });
+    }
   }
 
   const orderItems = items.map((item: any) => {
@@ -52,6 +62,13 @@ export async function POST(req: Request) {
   });
   if (insErr) {
     return NextResponse.json({ error: insErr.message }, { status: 500 });
+  }
+
+  // this session's temporary hold is now superseded by the real order's
+  // own hold (via orders.status = 'pending'), so release it immediately
+  // rather than waiting for the 10-minute reservation to expire on its own
+  if (sessionId) {
+    await supabase.from('cart_reservations').delete().eq('session_id', sessionId);
   }
 
   // 4. notify the admin on Telegram

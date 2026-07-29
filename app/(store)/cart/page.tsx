@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { getCart, removeFromCart, clearCart, CartLine } from '@/lib/cart';
+import { getCart, removeFromCart, clearCart, getCartSessionId, CartLine } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
 import { isDiscountLive, isFreeShippingLive, isFreeShippingEnabled, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
@@ -23,6 +23,10 @@ export default function CartPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
+  const [reserving, setReserving] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [holdExpired, setHoldExpired] = useState(false);
 
   useEffect(() => {
     const c = getCart();
@@ -37,6 +41,19 @@ export default function CartPage() {
     supabase.from('settings').select('*').single().then(({ data }) => setSettings(data));
     supabase.from('promotion').select('*').single().then(({ data }) => setPromo(data));
   }, []);
+
+  // countdown timer for the 10-minute payment hold
+  useEffect(() => {
+    if (!expiresAt) { setSecondsLeft(null); return; }
+    function tick() {
+      const remaining = Math.max(0, Math.round((expiresAt! - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0) setHoldExpired(true);
+    }
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
 
   const discountLive = isDiscountLive(promo);
 
@@ -59,10 +76,44 @@ export default function CartPage() {
       return;
     }
     setError('');
-    setStep('payment');
+    setReserving(true);
+    try {
+      const res = await fetch('/api/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: getCartSessionId(),
+          items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.error === 'unavailable' && data.items?.length) {
+          const names = data.items.map((i: any) => i.name || i.productId).join(', ');
+          setError(t('cart.errorReserveUnavailable', { names }));
+        } else {
+          setError(t('cart.errorReserveGeneric'));
+        }
+        return;
+      }
+      setExpiresAt(new Date(data.expiresAt).getTime());
+      setHoldExpired(false);
+      setStep('payment');
+    } catch {
+      setError(t('cart.errorReserveGeneric'));
+    } finally {
+      setReserving(false);
+    }
+  }
+
+  function backToCartFromExpired() {
+    setHoldExpired(false);
+    setExpiresAt(null);
+    setStep('cart');
   }
 
   async function submitPayment() {
+    if (holdExpired) { setError(t('cart.holdExpiredError')); return; }
     if (!/^\d{6}$/.test(trackingCode)) { setError(t('cart.errorTrackingCode')); return; }
     if (!slipFile) { setError(t('cart.errorSlip')); return; }
     setError('');
@@ -82,6 +133,7 @@ export default function CartPage() {
           // shipping, and totals itself from the live product + promotion data.
           items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           contact, trackingCode, slipImage: pub.publicUrl,
+          sessionId: getCartSessionId(),
         }),
       });
       const data = await res.json();
@@ -171,7 +223,9 @@ export default function CartPage() {
             <div className="field"><label>{t('cart.phoneLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
               <input required value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
-            <button className="btn btn-primary" onClick={goToPayment}>{t('cart.proceedToPayment')}</button>
+            <button className="btn btn-primary" disabled={reserving} onClick={goToPayment}>
+              {reserving ? t('cart.checkingAvailability') : t('cart.proceedToPayment')}
+            </button>
           </div>
         </>
       )}
@@ -179,6 +233,15 @@ export default function CartPage() {
       {step === 'payment' && (
         <>
           <h1>{t('cart.paymentTitle')}</h1>
+          {secondsLeft !== null && !holdExpired && (
+            <div style={{
+              background: secondsLeft <= 60 ? '#F3E0DC' : 'var(--jade-light)',
+              color: secondsLeft <= 60 ? 'var(--rose)' : 'var(--jade)',
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16, textAlign: 'center', fontWeight: 700, fontSize: 14,
+            }}>
+              {t('cart.holdCountdown', { mmss: `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` })}
+            </div>
+          )}
           <div className="card">
             <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 10 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
             <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>
@@ -200,13 +263,20 @@ export default function CartPage() {
           </div>
           <div className="card">
             <h3>{t('cart.attachSlipTitle')} <span style={{ color: 'var(--rose)', fontSize: 14 }}>*</span></h3>
-            <div className="field"><input required type="file" accept="image/*" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} /></div>
+            <div className="field"><input required type="file" accept="image/*" disabled={holdExpired} onChange={(e) => setSlipFile(e.target.files?.[0] || null)} /></div>
             <div className="field"><label>{t('cart.trackingCodeLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
-              <input required maxLength={6} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="เช่น 482913" /></div>
+              <input required maxLength={6} disabled={holdExpired} value={trackingCode} onChange={(e) => setTrackingCode(e.target.value)} placeholder="เช่น 482913" /></div>
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
-            <button className="btn btn-primary" disabled={submitting} onClick={submitPayment}>
-              {submitting ? t('cart.submitting') : t('cart.confirmPayment')}
-            </button>
+            {holdExpired ? (
+              <>
+                <p style={{ color: 'var(--rose)', fontWeight: 600 }}>{t('cart.holdExpiredMessage')}</p>
+                <button className="btn btn-primary" onClick={backToCartFromExpired}>{t('cart.backToCart')}</button>
+              </>
+            ) : (
+              <button className="btn btn-primary" disabled={submitting} onClick={submitPayment}>
+                {submitting ? t('cart.submitting') : t('cart.confirmPayment')}
+              </button>
+            )}
           </div>
         </>
       )}

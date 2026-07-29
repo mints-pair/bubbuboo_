@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { computeAvailability } from '@/lib/availability';
 import { useLang } from '@/lib/lang-context';
 import { isDiscountLive, isFreeShippingUnconditional, isFreeShippingEnabled, isPromotionLive, discountedPrice, productHasDiscount } from '@/lib/promotion';
 import AddToCartBox from './AddToCartBox';
@@ -12,8 +11,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [p, setP] = useState<any>(null);
   const [memberName, setMemberName] = useState('');
   const [eventName, setEventName] = useState('');
-  const [available, setAvailable] = useState(0);
-  const [heldAll, setHeldAll] = useState(false);
   const [promo, setPromo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,13 +30,6 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     } else {
       setMemberName('');
       setEventName('');
-    }
-    if (product) {
-      const { data: held } = await supabase.rpc('held_stock');
-      const heldQty = (held || []).find((r: any) => r.product_id === product.id)?.held_qty || 0;
-      const av = computeAvailability(product.stock, Number(heldQty));
-      setAvailable(av.available);
-      setHeldAll(av.heldAll);
     }
     const { data: promoData } = await supabase.from('promotion').select('*').single();
     setPromo(promoData);
@@ -118,7 +108,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
           </p>
         )}
         <p style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{p.description}</p>
-        <AddToCartBox product={p} available={available} heldAll={heldAll} />
+        <AddToCartBox product={p} />
       </div>
     </div>
   );

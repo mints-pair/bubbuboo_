@@ -2,18 +2,32 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { addToCart, getCart } from '@/lib/cart';
+import { createClient } from '@/lib/supabase/client';
 import { useLang } from '@/lib/lang-context';
 
 export default function AddToCartBox({ product }: { product: any }) {
+  const supabase = createClient();
   const [qty, setQty] = useState(1);
   const [cartQty, setCartQty] = useState(0);
+  const [otherGiveawayQty, setOtherGiveawayQty] = useState(0);
   const router = useRouter();
   const { t } = useLang();
 
   useEffect(() => {
     const line = getCart().find((c) => c.productId === product.id);
     setCartQty(line?.qty || 0);
+    checkGiveawayLimit();
   }, [product.id]);
+
+  async function checkGiveawayLimit() {
+    if (!product.is_giveaway) return;
+    const others = getCart().filter((c) => c.productId !== product.id);
+    if (others.length === 0) { setOtherGiveawayQty(0); return; }
+    const { data } = await supabase.from('products').select('id, is_giveaway').in('id', others.map((c) => c.productId));
+    const giveawayIds = new Set((data || []).filter((p: any) => p.is_giveaway).map((p: any) => p.id));
+    const qty = others.filter((c) => giveawayIds.has(c.productId)).reduce((a, c) => a + c.qty, 0);
+    setOtherGiveawayQty(qty);
+  }
 
   if (product.stock <= 0) {
     return <button className="btn btn-outline" disabled>{t('product.soldOut')}</button>;
@@ -22,7 +36,14 @@ export default function AddToCartBox({ product }: { product: any }) {
   // Adding to cart only ever checks real stock — a payment-step hold from
   // another shopper never blocks this. Contention (if any) only surfaces
   // later, when this shopper tries to advance to the payment step.
-  const max = Math.max(0, product.stock - cartQty);
+  // Giveaway items are additionally capped at 1 total across ALL giveaway
+  // products combined, per order.
+  const stockMax = Math.max(0, product.stock - cartQty);
+  const max = product.is_giveaway
+    ? Math.max(0, Math.min(stockMax, 1 - otherGiveawayQty - cartQty))
+    : stockMax;
+  const blockedByOtherGiveaway = product.is_giveaway && otherGiveawayQty > 0;
+  const alreadyHasThisGiveaway = product.is_giveaway && cartQty > 0;
 
   function handleAdd() {
     addToCart(product.id, qty);
@@ -42,6 +63,11 @@ export default function AddToCartBox({ product }: { product: any }) {
         </div>
         <span style={{ fontSize: 13, color: '#8a8378' }}>{t('product.availableLeft', { n: max })}</span>
       </div>
+      {product.is_giveaway && (blockedByOtherGiveaway || alreadyHasThisGiveaway) && (
+        <p style={{ fontSize: 12.5, color: 'var(--rose)', marginTop: -8, marginBottom: 10 }}>
+          {blockedByOtherGiveaway ? t('product.giveawayLimitBlocked') : t('product.giveawayLimitAlready')}
+        </p>
+      )}
       <button
         className="btn btn-primary"
         disabled={max <= 0}

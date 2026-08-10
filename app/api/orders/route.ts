@@ -38,6 +38,16 @@ export async function POST(req: Request) {
     }
   }
 
+  // giveaway items are capped at 1 total (across ALL giveaway products
+  // combined) per order — never trust the client to have enforced this
+  const totalGiveawayQty = items.reduce((a: number, item: any) => {
+    const p = products.find((x: any) => x.id === item.productId)!;
+    return a + (p.is_giveaway ? item.qty : 0);
+  }, 0);
+  if (totalGiveawayQty > 1) {
+    return NextResponse.json({ error: 'สามารถเลือกของแจกได้สูงสุด 1 ชิ้นต่อออเดอร์' }, { status: 400 });
+  }
+
   const orderItems = items.map((item: any) => {
     const p = products.find((x: any) => x.id === item.productId)!;
     const unitPrice = productHasDiscount(p.id, promo) ? discountedPrice(p.id, p.price, promo) : p.price;

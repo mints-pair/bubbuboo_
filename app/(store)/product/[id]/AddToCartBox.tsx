@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { addToCart, getCart } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
 
 export default function AddToCartBox({ product }: { product: any }) {
   const [qty, setQty] = useState(1);
   const [cartQty, setCartQty] = useState(0);
-  const router = useRouter();
+  const [justAdded, setJustAdded] = useState(false);
   const { t } = useLang();
 
   useEffect(() => {
@@ -24,6 +24,14 @@ export default function AddToCartBox({ product }: { product: any }) {
   // later, when this shopper tries to advance to the payment step.
   const max = Math.max(0, product.stock - cartQty);
 
+  function handleAdd() {
+    addToCart(product.id, qty);
+    setCartQty((q) => q + qty);
+    setQty(1);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2500);
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '16px 0' }}>
@@ -37,13 +45,16 @@ export default function AddToCartBox({ product }: { product: any }) {
       <button
         className="btn btn-primary"
         disabled={max <= 0}
-        onClick={() => {
-          addToCart(product.id, qty);
-          router.push('/cart');
-        }}
+        onClick={handleAdd}
       >
         {t('product.addToCart')}
       </button>
+      {justAdded && (
+        <div style={{ marginTop: 10, fontSize: 13.5, color: 'var(--jade)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span>✓ {t('product.addedToCart')}</span>
+          <Link href="/cart" style={{ color: 'var(--jade)', textDecoration: 'underline' }}>{t('product.goToCartNow')}</Link>
+        </div>
+      )}
     </div>
   );
 }

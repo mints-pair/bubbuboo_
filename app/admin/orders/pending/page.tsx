@@ -60,6 +60,14 @@ export default function PendingConfirmPage() {
             </table>
           </div>
           <div style={{ fontWeight: 700, marginBottom: 10 }}>ยอดรวม (รวมค่าส่ง ฿{o.shipping_fee}): ฿{Number(o.total).toLocaleString('th-TH')}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{ fontSize: 12.5, background: 'var(--paper-dim)', padding: '3px 10px', borderRadius: 99 }}>
+              ชำระผ่าน: {o.payment_method === 'wise' ? 'Wise' : o.payment_method === 'truewallet' ? `TrueWallet (+฿${o.payment_surcharge})` : 'QR'}
+            </span>
+            <span style={{ fontSize: 12.5, background: o.shipping_area === 'special' ? '#F3E0DC' : 'var(--paper-dim)', color: o.shipping_area === 'special' ? 'var(--rose)' : 'inherit', padding: '3px 10px', borderRadius: 99 }}>
+              พื้นที่: {o.shipping_area === 'special' ? 'พิเศษ (+฿20)' : 'ปกติ'}
+            </span>
+          </div>
           <div>ผู้ติดต่อ: {o.contact.name} · {o.contact.phone}</div>
           <div style={{ color: '#8a8378', marginBottom: 8 }}>ที่อยู่: {o.contact.address} | X: {o.contact.xAccount}</div>
           <div style={{ marginBottom: 8 }}>รหัสติดตามที่ลูกค้าตั้ง: <b>{o.tracking_code}</b></div>

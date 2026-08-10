@@ -5,7 +5,7 @@ import { discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { items, contact, trackingCode, slipImage, sessionId } = body;
+  const { items, contact, trackingCode, slipImage, sessionId, paymentMethod, shippingArea } = body;
 
   if (!items?.length || !contact?.xAccount || !contact?.name || !contact?.address || !contact?.phone) {
     return NextResponse.json({ error: 'ข้อมูลไม่ครบ' }, { status: 400 });
@@ -13,6 +13,8 @@ export async function POST(req: Request) {
   if (!/^\d{6}$/.test(trackingCode)) {
     return NextResponse.json({ error: 'รหัสติดตามต้องเป็นตัวเลข 6 หลัก' }, { status: 400 });
   }
+  const validMethod = ['qr', 'wise', 'truewallet'].includes(paymentMethod) ? paymentMethod : 'qr';
+  const validArea = shippingArea === 'special' ? 'special' : 'normal';
 
   const supabase = createAdminSupabase();
 
@@ -44,8 +46,11 @@ export async function POST(req: Request) {
 
   const subtotal = orderItems.reduce((a: number, it: any) => a + it.price * it.qty, 0);
   const rawShippingFee = products.reduce((max: number, p: any) => Math.max(max, p.shipping_fee || 0), 0);
-  const shippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
-  const total = subtotal + shippingFee;
+  const baseShippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
+  const areaSurcharge = validArea === 'special' ? 20 : 0;
+  const shippingFee = baseShippingFee + areaSurcharge;
+  const paymentSurcharge = validMethod === 'truewallet' ? 20 : 0;
+  const total = subtotal + shippingFee + paymentSurcharge;
 
   // 2. atomically get the next PW-YYMMxxx order number
   const { data: orderNumber, error: numErr } = await supabase.rpc('next_order_number');
@@ -59,6 +64,7 @@ export async function POST(req: Request) {
     status: 'pending',
     items: orderItems, subtotal, shipping_fee: shippingFee, total,
     contact, tracking_code: trackingCode, slip_image: slipImage,
+    payment_method: validMethod, payment_surcharge: paymentSurcharge, shipping_area: validArea,
   });
   if (insErr) {
     return NextResponse.json({ error: insErr.message }, { status: 500 });
@@ -75,7 +81,7 @@ export async function POST(req: Request) {
   // (stock is intentionally NOT decremented here — it's deducted only when
   //  the admin confirms the order, see /api/orders/[orderNumber]/confirm)
   await sendAdminTelegramMessage(
-    `มีคำสั่งซื้อใหม่รอตรวจสอบสลิป\nเลขออเดอร์: ${orderNumber}\nยอดรวม: ฿${total.toLocaleString('th-TH')}\nลูกค้า: ${contact.name} (${contact.phone})`
+    `มีคำสั่งซื้อใหม่รอตรวจสอบสลิป\nเลขออเดอร์: ${orderNumber}\nยอดรวม: ฿${total.toLocaleString('th-TH')}\nช่องทางชำระเงิน: ${validMethod === 'qr' ? 'QR' : validMethod === 'wise' ? 'Wise' : 'TrueWallet'}\nพื้นที่ขนส่ง: ${validArea === 'special' ? 'พิเศษ' : 'ปกติ'}\nลูกค้า: ${contact.name} (${contact.phone})`
   );
 
   return NextResponse.json({ orderNumber });

@@ -249,6 +249,12 @@ create index if not exists cart_reservations_product_idx on cart_reservations(pr
 create index if not exists cart_reservations_session_idx on cart_reservations(session_id);
 alter table cart_reservations enable row level security;
 
+-- Lets logged-in admin see and manually clear a hold early (e.g. a customer
+-- reached the payment step, reserving stock for 10 minutes, then called to
+-- say they no longer want it — no need to wait out the timer).
+create policy "admin manage reservations" on cart_reservations
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
 -- held_stock() now also counts active (non-expired) reservations, not just
 -- pending orders, so the storefront/admin "held" numbers include people
 -- currently sitting on the payment page with an active 10-minute hold.

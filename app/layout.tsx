@@ -2,11 +2,17 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import { LangProvider } from '@/lib/lang-context';
 import IdleLogout from '@/components/IdleLogout';
+import { createServerSupabase } from '@/lib/supabase/server';
 
-export const metadata = {
-  title: 'ร้านค้า',
-  description: 'ร้านค้าออนไลน์',
-};
+export async function generateMetadata() {
+  const supabase = createServerSupabase();
+  const { data } = await supabase.from('settings').select('store_name').single();
+  const name = data?.store_name || 'ร้านค้า';
+  return {
+    title: name,
+    description: `${name} - ร้านค้าออนไลน์`,
+  };
+}
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

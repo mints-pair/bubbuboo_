@@ -7,6 +7,11 @@ import { useLang } from '@/lib/lang-context';
 import { isDiscountLive, isFreeShippingLive, isFreeShippingEnabled, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
 
 type Step = 'cart' | 'payment' | 'done';
+type PaymentMethod = 'qr' | 'wise' | 'truewallet';
+type ShippingArea = 'normal' | 'special';
+
+const TRUEWALLET_SURCHARGE = 20;
+const SPECIAL_AREA_SURCHARGE = 20;
 
 export default function CartPage() {
   const supabase = createClient();
@@ -17,7 +22,11 @@ export default function CartPage() {
   const [products, setProducts] = useState<Record<string, any>>({});
   const [settings, setSettings] = useState<any>(null);
   const [promo, setPromo] = useState<any>(null);
+  const [specialAreas, setSpecialAreas] = useState<any[]>([]);
+  const [showAreaList, setShowAreaList] = useState(false);
   const [contact, setContact] = useState({ xAccount: '', name: '', address: '', phone: '' });
+  const [shippingArea, setShippingArea] = useState<ShippingArea>('normal');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('qr');
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [trackingCode, setTrackingCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -40,6 +49,7 @@ export default function CartPage() {
     }
     supabase.from('settings').select('*').single().then(({ data }) => setSettings(data));
     supabase.from('promotion').select('*').single().then(({ data }) => setPromo(data));
+    supabase.from('special_shipping_areas').select('*').order('postal_code', { ascending: true }).then(({ data }) => setSpecialAreas(data || []));
   }, []);
 
   // countdown timer for the 10-minute payment hold
@@ -55,18 +65,18 @@ export default function CartPage() {
     return () => clearInterval(interval);
   }, [expiresAt]);
 
-  const discountLive = isDiscountLive(promo);
-
   const lines = cart.map((l) => ({ ...l, product: products[l.productId] })).filter((l) => l.product);
-  const subtotalOriginal = lines.reduce((a: number, l: any) => a + l.product.price * l.qty, 0);
   const subtotal = lines.reduce((a: number, l: any) => {
     const unitPrice = productHasDiscount(l.product.id, promo) ? discountedPrice(l.product.id, l.product.price, promo) : l.product.price;
     return a + unitPrice * l.qty;
   }, 0);
   const rawShippingFee = lines.reduce((max: number, l: any) => Math.max(max, l.product.shipping_fee || 0), 0);
   const freeShipLive = isFreeShippingLive(promo, subtotal);
-  const shippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
-  const total = subtotal + shippingFee;
+  const baseShippingFee = effectiveShippingFee(rawShippingFee, promo, subtotal);
+  const areaSurcharge = shippingArea === 'special' ? SPECIAL_AREA_SURCHARGE : 0;
+  const shippingFee = baseShippingFee + areaSurcharge;
+  const paymentSurcharge = paymentMethod === 'truewallet' ? TRUEWALLET_SURCHARGE : 0;
+  const total = subtotal + shippingFee + paymentSurcharge;
   const freeShipMin = promo?.free_shipping_min_amount || 0;
   const freeShipAmountAway = isFreeShippingEnabled(promo) && !freeShipLive && freeShipMin > 0 ? freeShipMin - subtotal : 0;
 
@@ -134,6 +144,7 @@ export default function CartPage() {
           items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
           contact, trackingCode, slipImage: pub.publicUrl,
           sessionId: getCartSessionId(),
+          paymentMethod, shippingArea,
         }),
       });
       const data = await res.json();
@@ -201,9 +212,19 @@ export default function CartPage() {
               <span>{t('cart.shippingFee')}</span>
               <span>
                 {freeShipLive && rawShippingFee > 0 && <span style={{ textDecoration: 'line-through', color: '#a89f92', marginRight: 6 }}>฿{rawShippingFee.toLocaleString('th-TH')}</span>}
-                ฿{shippingFee.toLocaleString('th-TH')}{freeShipLive ? t('cart.freeSuffix') : ''}
+                ฿{baseShippingFee.toLocaleString('th-TH')}{freeShipLive ? t('cart.freeSuffix') : ''}
               </span>
             </div>
+            {areaSurcharge > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span>{t('cart.specialAreaFeeLabel')}</span><span>฿{areaSurcharge.toLocaleString('th-TH')}</span>
+              </div>
+            )}
+            {paymentSurcharge > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
+                <span>{t('cart.paymentFeeLabel')}</span><span>฿{paymentSurcharge.toLocaleString('th-TH')}</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 19, borderTop: '1.5px dashed var(--line)', marginTop: 8, paddingTop: 12 }}><span>{t('cart.total')}</span><span>฿{total.toLocaleString('th-TH')}</span></div>
             {freeShipAmountAway > 0 && (
               <p style={{ fontSize: 12.5, color: 'var(--jade)', marginTop: 8, textAlign: 'right' }}>
@@ -222,6 +243,36 @@ export default function CartPage() {
               <textarea required rows={3} value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} /></div>
             <div className="field"><label>{t('cart.phoneLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
               <input required value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
+
+            <div className="field">
+              <label>{t('cart.shippingAreaLabel')}</label>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={shippingArea === 'normal'} onChange={() => setShippingArea('normal')} />
+                  <span>{t('cart.areaNormal')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={shippingArea === 'special'} onChange={() => setShippingArea('special')} />
+                  <span>{t('cart.areaSpecial', { n: SPECIAL_AREA_SURCHARGE })}</span>
+                </label>
+              </div>
+              <button type="button" onClick={() => setShowAreaList((v) => !v)}
+                style={{ background: 'none', border: 'none', color: 'var(--jade)', fontSize: 12.5, textDecoration: 'underline', padding: 0, cursor: 'pointer' }}>
+                {showAreaList ? t('cart.hideAreaList') : t('cart.showAreaList')}
+              </button>
+              {showAreaList && (
+                <div style={{ marginTop: 8, background: 'var(--paper-dim)', borderRadius: 9, padding: '10px 12px', maxHeight: 180, overflowY: 'auto' }}>
+                  {specialAreas.length === 0 ? (
+                    <p style={{ fontSize: 12.5, color: '#8a8378', margin: 0 }}>{t('cart.noAreaListed')}</p>
+                  ) : (
+                    specialAreas.map((a) => (
+                      <div key={a.id} style={{ fontSize: 12.5, padding: '3px 0' }}>{a.postal_code} — {a.area_name}</div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
             <button className="btn btn-primary" disabled={reserving} onClick={goToPayment}>
               {reserving ? t('cart.checkingAvailability') : t('cart.proceedToPayment')}
@@ -243,7 +294,26 @@ export default function CartPage() {
             </div>
           )}
           <div className="card">
-            <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 10 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
+            <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 14 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
+
+            <div className="field">
+              <label>{t('cart.paymentMethodLabel')}</label>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} />
+                  <span>{t('cart.methodQr')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={paymentMethod === 'wise'} onChange={() => setPaymentMethod('wise')} />
+                  <span>{t('cart.methodWise')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={paymentMethod === 'truewallet'} onChange={() => setPaymentMethod('truewallet')} />
+                  <span>{t('cart.methodTruewallet', { n: TRUEWALLET_SURCHARGE })}</span>
+                </label>
+              </div>
+            </div>
+
             <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>
               {settings?.qr_image_url ? (
                 <a href={settings.qr_image_url} target="_blank" rel="noopener">
@@ -259,7 +329,14 @@ export default function CartPage() {
                 <p style={{ fontSize: 12, color: 'var(--jade)', textAlign: 'center', marginTop: 4 }}>{t('cart.qrTapHint')}</p>
               </>
             )}
-            <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.altPaymentNote')}</p>
+            {paymentMethod === 'wise' && (
+              <div style={{ background: '#F3E0DC', borderRadius: 10, padding: '10px 14px', marginTop: 12, textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 13.5, color: 'var(--rose)', fontWeight: 600 }}>{t('cart.wiseInstructions')}</p>
+              </div>
+            )}
+            {paymentMethod === 'truewallet' && (
+              <p style={{ fontSize: 12.5, color: 'var(--jade)', textAlign: 'center', marginTop: 10 }}>{t('cart.truewalletInGraphic')}</p>
+            )}
           </div>
           <div className="card">
             <h3>{t('cart.attachSlipTitle')} <span style={{ color: 'var(--rose)', fontSize: 14 }}>*</span></h3>

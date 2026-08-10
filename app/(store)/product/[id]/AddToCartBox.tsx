@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { addToCart, getCart } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
 
 export default function AddToCartBox({ product }: { product: any }) {
   const [qty, setQty] = useState(1);
   const [cartQty, setCartQty] = useState(0);
-  const [justAdded, setJustAdded] = useState(false);
+  const router = useRouter();
   const { t } = useLang();
 
   useEffect(() => {
@@ -26,10 +26,10 @@ export default function AddToCartBox({ product }: { product: any }) {
 
   function handleAdd() {
     addToCart(product.id, qty);
-    setCartQty((q) => q + qty);
-    setQty(1);
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 2500);
+    // survive the navigation back to the listing page, so the layout can
+    // show a green "added to cart" popup there
+    sessionStorage.setItem('cart_flash', '1');
+    router.back();
   }
 
   return (
@@ -49,12 +49,6 @@ export default function AddToCartBox({ product }: { product: any }) {
       >
         {t('product.addToCart')}
       </button>
-      {justAdded && (
-        <div style={{ marginTop: 10, fontSize: 13.5, color: 'var(--jade)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span>✓ {t('product.addedToCart')}</span>
-          <Link href="/cart" style={{ color: 'var(--jade)', textDecoration: 'underline' }}>{t('product.goToCartNow')}</Link>
-        </div>
-      )}
     </div>
   );
 }

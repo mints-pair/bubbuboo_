@@ -16,6 +16,18 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
   const [contactOpen, setContactOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [settings, setSettings] = useState<{ store_name?: string; logo_url?: string } | null>(null);
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const flash = sessionStorage.getItem('cart_flash');
+    if (flash) {
+      sessionStorage.removeItem('cart_flash');
+      setFlashMessage(t('product.addedToCart'));
+      const timer = setTimeout(() => setFlashMessage(null), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     const update = () => setCartCount(getCart().reduce((a: number, c: any) => a + c.qty, 0));
@@ -94,6 +106,17 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
 
       {contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
+
+      {flashMessage && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--jade)', color: '#fff', padding: '12px 22px', borderRadius: 99,
+          fontWeight: 600, fontSize: 14, boxShadow: '0 8px 24px rgba(0,0,0,.18)', zIndex: 100,
+          display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap',
+        }}>
+          ✓ {flashMessage}
+        </div>
+      )}
     </div>
   );
 }

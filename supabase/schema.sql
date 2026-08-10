@@ -53,6 +53,9 @@ create table if not exists orders (
   tracking_code text not null,              -- 6-digit code the customer sets
   shipping jsonb,                           -- { trackingNumber, carrier, date }
   cancel_reason text,                       -- set when status = 'cancelled' (admin rejected the order)
+  payment_method text not null default 'qr', -- 'qr' | 'wise' | 'truewallet'
+  payment_surcharge numeric not null default 0,
+  shipping_area text not null default 'normal', -- 'normal' | 'special'
   created_at timestamptz not null default now()
 );
 
@@ -268,3 +271,22 @@ as $$
 $$;
 
 grant execute on function held_stock() to anon, authenticated;
+
+-- ============================================================
+-- SPECIAL SHIPPING AREAS (postal code + area name, admin-managed)
+-- Purely informational for now — shown to customers so they can tell
+-- whether their area counts as "special" before choosing at checkout.
+-- ============================================================
+create table if not exists special_shipping_areas (
+  id uuid primary key default gen_random_uuid(),
+  postal_code text not null,
+  area_name text not null,
+  created_at timestamptz not null default now()
+);
+alter table special_shipping_areas enable row level security;
+
+create policy "public read special areas" on special_shipping_areas
+  for select using (true);
+
+create policy "admin manage special areas" on special_shipping_areas
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

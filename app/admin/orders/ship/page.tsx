@@ -59,6 +59,18 @@ export default function PendingShipPage() {
           <div key={o.order_number} className="card" style={{ marginTop: 16 }}>
             <b style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>{o.order_number}</b>
             <div style={{ color: '#8a8378', margin: '8px 0' }}>ส่งถึง: {o.contact.name} — {o.contact.address} · {o.contact.phone}</div>
+
+            <div style={{ background: 'var(--paper-dim)', borderRadius: 9, padding: '10px 12px', marginBottom: 14 }}>
+              {o.items.map((it: any, i: number) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: i < o.items.length - 1 ? '1px dashed var(--line)' : 'none' }}>
+                  <img src={it.image || ''} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 7, background: '#fff', flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name}</div>
+                    <div style={{ fontSize: 12, color: '#8a8378' }}>จำนวน {it.qty} ชิ้น</div>
+                  </div>
+                </div>
+              ))}
+            </div>
             <div className="field-row">
               <div className="field" style={{ flex: 1 }}><label>เลขพัสดุ</label>
                 <input value={f.trackingNumber} onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, trackingNumber: e.target.value } })} /></div>

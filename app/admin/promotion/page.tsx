@@ -115,11 +115,11 @@ export default function AdminPromotionPage() {
             <div className="field">
               <label>ใช้กับสินค้า</label>
               <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input type="radio" checked={promo.discount_scope === 'all'} onChange={() => setPromo({ ...promo, discount_scope: 'all' })} />
                   <span>ทุกชิ้นในร้าน</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input type="radio" checked={promo.discount_scope === 'selected'} onChange={() => setPromo({ ...promo, discount_scope: 'selected' })} />
                   <span>เลือกเฉพาะบางชิ้น</span>
                 </label>

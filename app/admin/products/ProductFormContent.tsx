@@ -199,12 +199,12 @@ export default function ProductFormContent() {
 
         <div className="field">
           <label>ลงขายที่ตลาด</label>
-          <div style={{ display: 'flex', gap: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv' })} />
               <span>#ตลาดนัดGMMTV</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
               <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd' })} />
               <span>#ตลาดนัดDMD</span>
             </label>

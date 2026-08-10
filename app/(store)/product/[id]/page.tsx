@@ -12,6 +12,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const [memberName, setMemberName] = useState('');
   const [eventName, setEventName] = useState('');
   const [promo, setPromo] = useState<any>(null);
+  const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     setLoading(true);
     const { data: product } = await supabase.from('products').select('*').eq('id', params.id).single();
     setP(product);
+    setSelectedImgIdx(0);
     const ids = [product?.member_id, product?.event_id].filter(Boolean);
     if (ids.length) {
       const { data: cats } = await supabase.from('categories').select('id, name').in('id', ids);
@@ -47,10 +49,25 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     <div className="container" style={{ display: 'flex', gap: 30, flexWrap: 'wrap' }}>
       <div style={{ flex: 1, minWidth: 260, maxWidth: 420 }}>
         <img
-          src={p.images?.[0] || ''}
+          src={p.images?.[selectedImgIdx] || p.images?.[0] || ''}
           alt={p.name}
           style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 14, background: 'var(--paper-dim)' }}
         />
+        {p.images?.length > 1 && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+            {p.images.map((im: string, i: number) => (
+              <img
+                key={i}
+                src={im}
+                onClick={() => setSelectedImgIdx(i)}
+                style={{
+                  width: 56, height: 56, objectFit: 'cover', borderRadius: 8, cursor: 'pointer',
+                  border: i === selectedImgIdx ? '2px solid var(--jade)' : '2px solid transparent',
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
       <div style={{ flex: 1, minWidth: 260 }}>
         <h1>{p.name}</h1>

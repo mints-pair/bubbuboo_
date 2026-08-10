@@ -24,6 +24,8 @@ export const translations: Record<Lang, any> = {
     product: {
       shippingFee: 'ค่าจัดส่ง',
       addToCart: 'ใส่ตะกร้า',
+      addedToCart: 'เพิ่มลงตะกร้าแล้ว',
+      goToCartNow: 'ไปที่ตะกร้าเลย',
       soldOut: 'Sold out',
       reservedTitle: 'ติดจอง — สินค้าถูกจองไว้ทั้งหมด',
       reservedNote: 'สินค้านี้กำลังรอการยืนยันการชำระเงินจากลูกค้าท่านอื่น หากรายการนั้นถูกยกเลิก สินค้าจะกลับมาให้สั่งซื้อได้อีกครั้ง',
@@ -67,6 +69,7 @@ export const translations: Record<Lang, any> = {
       holdExpiredMessage: 'หมดเวลาการจองสินค้าแล้ว กรุณาเริ่มทำรายการใหม่',
       holdExpiredError: 'หมดเวลาการจองสินค้าแล้ว กรุณาเริ่มทำรายการใหม่',
       backToCart: 'กลับไปที่ตะกร้า',
+      editInfo: 'ย้อนกลับไปแก้ไขข้อมูล',
       shippingAreaLabel: 'พื้นที่ขนส่ง',
       areaNormal: 'พื้นที่ขนส่งปกติ',
       areaSpecial: 'พื้นที่ขนส่งพิเศษ (+฿{n})',
@@ -151,6 +154,8 @@ export const translations: Record<Lang, any> = {
     product: {
       shippingFee: 'Shipping fee',
       addToCart: 'Add to cart',
+      addedToCart: 'Added to cart',
+      goToCartNow: 'Go to cart now',
       soldOut: 'Sold out',
       reservedTitle: 'Reserved — fully held',
       reservedNote: 'This item is awaiting payment confirmation from another customer. If that order is cancelled, it will become available again.',
@@ -194,6 +199,7 @@ export const translations: Record<Lang, any> = {
       holdExpiredMessage: 'Your hold has expired. Please start over.',
       holdExpiredError: 'Your hold has expired. Please start over.',
       backToCart: 'Back to cart',
+      editInfo: 'Edit info',
       shippingAreaLabel: 'Shipping area',
       areaNormal: 'Standard delivery area',
       areaSpecial: 'Special delivery area (+฿{n})',

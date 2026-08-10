@@ -188,6 +188,15 @@ export default function CartPage() {
       {step === 'cart' && (
         <>
           <h1>{t('cart.title')}</h1>
+          {secondsLeft !== null && !holdExpired && (
+            <div style={{
+              background: secondsLeft <= 60 ? '#F3E0DC' : 'var(--jade-light)',
+              color: secondsLeft <= 60 ? 'var(--rose)' : 'var(--jade)',
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16, textAlign: 'center', fontWeight: 700, fontSize: 14,
+            }}>
+              {t('cart.holdCountdown', { mmss: `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}` })}
+            </div>
+          )}
 
           <div className="card">
             <h3>{t('cart.contactSectionTitle')}</h3>
@@ -227,6 +236,24 @@ export default function CartPage() {
                   )}
                 </div>
               )}
+            </div>
+
+            <div className="field">
+              <label>{t('cart.paymentMethodLabel')}</label>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input type="radio" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} />
+                  <span>{t('cart.methodQr')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input type="radio" checked={paymentMethod === 'wise'} onChange={() => setPaymentMethod('wise')} />
+                  <span>{t('cart.methodWise')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input type="radio" checked={paymentMethod === 'truewallet'} onChange={() => setPaymentMethod('truewallet')} />
+                  <span>{t('cart.methodTruewallet', { n: TRUEWALLET_SURCHARGE })}</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -295,24 +322,9 @@ export default function CartPage() {
             </div>
           )}
           <div className="card">
-            <div style={{ fontWeight: 700, fontSize: 19, marginBottom: 14 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
-
-            <div className="field">
-              <label>{t('cart.paymentMethodLabel')}</label>
-              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  <input type="radio" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} />
-                  <span>{t('cart.methodQr')}</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  <input type="radio" checked={paymentMethod === 'wise'} onChange={() => setPaymentMethod('wise')} />
-                  <span>{t('cart.methodWise')}</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  <input type="radio" checked={paymentMethod === 'truewallet'} onChange={() => setPaymentMethod('truewallet')} />
-                  <span>{t('cart.methodTruewallet', { n: TRUEWALLET_SURCHARGE })}</span>
-                </label>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 19 }}>{t('cart.amountToPay')}: ฿{total.toLocaleString('th-TH')}</div>
+              <button className="btn btn-outline" onClick={() => setStep('cart')}>{t('cart.editInfo')}</button>
             </div>
 
             <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>

@@ -188,6 +188,48 @@ export default function CartPage() {
       {step === 'cart' && (
         <>
           <h1>{t('cart.title')}</h1>
+
+          <div className="card">
+            <h3>{t('cart.contactSectionTitle')}</h3>
+            <div className="field"><label>{t('cart.xAccountLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.xAccount} onChange={(e) => setContact({ ...contact, xAccount: e.target.value })} placeholder="@your_account" /></div>
+            <div className="field"><label>{t('cart.nameLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
+            <div className="field"><label>{t('cart.addressLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <textarea required rows={3} value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} /></div>
+            <div className="field"><label>{t('cart.phoneLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
+              <input required value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
+
+            <div className="field">
+              <label>{t('cart.shippingAreaLabel')}</label>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginBottom: 6 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input type="radio" checked={shippingArea === 'normal'} onChange={() => setShippingArea('normal')} />
+                  <span>{t('cart.areaNormal')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  <input type="radio" checked={shippingArea === 'special'} onChange={() => setShippingArea('special')} />
+                  <span>{t('cart.areaSpecial', { n: SPECIAL_AREA_SURCHARGE })}</span>
+                </label>
+              </div>
+              <button type="button" onClick={() => setShowAreaList((v) => !v)}
+                style={{ background: 'none', border: 'none', color: 'var(--jade)', fontSize: 12.5, textDecoration: 'underline', padding: 0, cursor: 'pointer' }}>
+                {showAreaList ? t('cart.hideAreaList') : t('cart.showAreaList')}
+              </button>
+              {showAreaList && (
+                <div style={{ marginTop: 8, background: 'var(--paper-dim)', borderRadius: 9, padding: '10px 12px', maxHeight: 180, overflowY: 'auto' }}>
+                  {specialAreas.length === 0 ? (
+                    <p style={{ fontSize: 12.5, color: '#8a8378', margin: 0 }}>{t('cart.noAreaListed')}</p>
+                  ) : (
+                    specialAreas.map((a) => (
+                      <div key={a.id} style={{ fontSize: 12.5, padding: '3px 0' }}>{a.postal_code} — {a.area_name}</div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="card">
             {lines.map((l) => {
               const lineDiscounted = productHasDiscount(l.product.id, promo);
@@ -231,47 +273,6 @@ export default function CartPage() {
                 {t('cart.freeShipAwayHint', { n: freeShipAmountAway.toLocaleString('th-TH') })}
               </p>
             )}
-          </div>
-
-          <div className="card">
-            <h3>{t('cart.contactSectionTitle')}</h3>
-            <div className="field"><label>{t('cart.xAccountLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
-              <input required value={contact.xAccount} onChange={(e) => setContact({ ...contact, xAccount: e.target.value })} placeholder="@your_account" /></div>
-            <div className="field"><label>{t('cart.nameLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
-              <input required value={contact.name} onChange={(e) => setContact({ ...contact, name: e.target.value })} /></div>
-            <div className="field"><label>{t('cart.addressLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
-              <textarea required rows={3} value={contact.address} onChange={(e) => setContact({ ...contact, address: e.target.value })} /></div>
-            <div className="field"><label>{t('cart.phoneLabel')} <span style={{ color: 'var(--rose)' }}>*</span></label>
-              <input required value={contact.phone} onChange={(e) => setContact({ ...contact, phone: e.target.value })} /></div>
-
-            <div className="field">
-              <label>{t('cart.shippingAreaLabel')}</label>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 6 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input type="radio" checked={shippingArea === 'normal'} onChange={() => setShippingArea('normal')} />
-                  <span>{t('cart.areaNormal')}</span>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                  <input type="radio" checked={shippingArea === 'special'} onChange={() => setShippingArea('special')} />
-                  <span>{t('cart.areaSpecial', { n: SPECIAL_AREA_SURCHARGE })}</span>
-                </label>
-              </div>
-              <button type="button" onClick={() => setShowAreaList((v) => !v)}
-                style={{ background: 'none', border: 'none', color: 'var(--jade)', fontSize: 12.5, textDecoration: 'underline', padding: 0, cursor: 'pointer' }}>
-                {showAreaList ? t('cart.hideAreaList') : t('cart.showAreaList')}
-              </button>
-              {showAreaList && (
-                <div style={{ marginTop: 8, background: 'var(--paper-dim)', borderRadius: 9, padding: '10px 12px', maxHeight: 180, overflowY: 'auto' }}>
-                  {specialAreas.length === 0 ? (
-                    <p style={{ fontSize: 12.5, color: '#8a8378', margin: 0 }}>{t('cart.noAreaListed')}</p>
-                  ) : (
-                    specialAreas.map((a) => (
-                      <div key={a.id} style={{ fontSize: 12.5, padding: '3px 0' }}>{a.postal_code} — {a.area_name}</div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
 
             {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
             <button className="btn btn-primary" disabled={reserving} onClick={goToPayment}>
@@ -298,16 +299,16 @@ export default function CartPage() {
 
             <div className="field">
               <label>{t('cart.paymentMethodLabel')}</label>
-              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input type="radio" checked={paymentMethod === 'qr'} onChange={() => setPaymentMethod('qr')} />
                   <span>{t('cart.methodQr')}</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input type="radio" checked={paymentMethod === 'wise'} onChange={() => setPaymentMethod('wise')} />
                   <span>{t('cart.methodWise')}</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   <input type="radio" checked={paymentMethod === 'truewallet'} onChange={() => setPaymentMethod('truewallet')} />
                   <span>{t('cart.methodTruewallet', { n: TRUEWALLET_SURCHARGE })}</span>
                 </label>

@@ -314,32 +314,29 @@ export default function CartPage() {
               </div>
             </div>
 
-            {paymentMethod === 'qr' ? (
+            <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>
+              {settings?.qr_image_url ? (
+                <a href={settings.qr_image_url} target="_blank" rel="noopener">
+                  <img src={settings.qr_image_url} style={{ width: 200, height: 200, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 10, cursor: 'zoom-in' }} />
+                </a>
+              ) : (
+                <p>{t('cart.qrNotSet')}</p>
+              )}
+            </div>
+            {settings?.qr_image_url && (
               <>
-                <div style={{ textAlign: 'center', background: 'var(--paper-dim)', borderRadius: 14, padding: 24 }}>
-                  {settings?.qr_image_url ? (
-                    <a href={settings.qr_image_url} target="_blank" rel="noopener">
-                      <img src={settings.qr_image_url} style={{ width: 200, height: 200, objectFit: 'contain', background: '#fff', borderRadius: 10, padding: 10, cursor: 'zoom-in' }} />
-                    </a>
-                  ) : (
-                    <p>{t('cart.qrNotSet')}</p>
-                  )}
-                </div>
-                {settings?.qr_image_url && (
-                  <>
-                    <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.qrCaption')}</p>
-                    <p style={{ fontSize: 12, color: 'var(--jade)', textAlign: 'center', marginTop: 4 }}>{t('cart.qrTapHint')}</p>
-                  </>
-                )}
+                <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.qrCaption')}</p>
+                <p style={{ fontSize: 12, color: 'var(--jade)', textAlign: 'center', marginTop: 4 }}>{t('cart.qrTapHint')}</p>
               </>
-            ) : (
-              <div style={{ background: 'var(--paper-dim)', borderRadius: 14, padding: '18px 20px', textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: 13.5 }}>
-                  {paymentMethod === 'wise' ? t('cart.wiseInstructions') : t('cart.truewalletInstructions')}
-                </p>
+            )}
+            {paymentMethod === 'wise' && (
+              <div style={{ background: '#F3E0DC', borderRadius: 10, padding: '10px 14px', marginTop: 12, textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 13.5, color: 'var(--rose)', fontWeight: 600 }}>{t('cart.wiseInstructions')}</p>
               </div>
             )}
-            <p style={{ fontSize: 12.5, color: '#8a8378', textAlign: 'center', marginTop: 10 }}>{t('cart.altPaymentNote')}</p>
+            {paymentMethod === 'truewallet' && (
+              <p style={{ fontSize: 12.5, color: 'var(--jade)', textAlign: 'center', marginTop: 10 }}>{t('cart.truewalletInGraphic')}</p>
+            )}
           </div>
           <div className="card">
             <h3>{t('cart.attachSlipTitle')} <span style={{ color: 'var(--rose)', fontSize: 14 }}>*</span></h3>

@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 import { compressImageFile, compressImage } from '@/lib/imageCompress';
 
-const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false, market: 'gmmtv' as 'gmmtv' | 'dmd' };
+const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberIds: [] as string[], eventId: '', isGiveaway: false, isFeatured: false, market: 'gmmtv' as 'gmmtv' | 'dmd' };
 
 export default function ProductFormContent() {
   const supabase = createClient();
@@ -106,7 +106,8 @@ export default function ProductFormContent() {
       stock: Number(draft.stock) || 0,
       tags: draft.tags.split(',').map((t) => t.trim()).filter(Boolean),
       images: draft.images,
-      member_id: draft.memberId || null,
+      member_id: draft.memberIds[0] || null,
+      member_ids: draft.memberIds,
       event_id: draft.eventId || null,
       is_giveaway: draft.isGiveaway,
       is_featured: draft.isFeatured,
@@ -133,7 +134,7 @@ export default function ProductFormContent() {
     setDraft({
       name: p.name, description: p.description, price: String(p.price), shippingFee: String(p.shipping_fee),
       stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [],
-      memberId: p.member_id || '', eventId: p.event_id || '',
+      memberIds: (p.member_ids && p.member_ids.length > 0) ? p.member_ids : (p.member_id ? [p.member_id] : []), eventId: p.event_id || '',
       isGiveaway: !!p.is_giveaway,
       isFeatured: !!p.is_featured,
       market: p.market || 'gmmtv',
@@ -246,11 +247,11 @@ export default function ProductFormContent() {
           <label>ลงขายที่ตลาด</label>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv', memberId: '', eventId: '' })} />
+              <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv', memberIds: [], eventId: '' })} />
               <span>#ตลาดนัดGMMTV</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd', memberId: '', eventId: '' })} />
+              <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd', memberIds: [], eventId: '' })} />
               <span>#ตลาดนัดDMD</span>
             </label>
           </div>
@@ -261,15 +262,27 @@ export default function ProductFormContent() {
         <div className="field"><label>รายละเอียดสินค้า</label>
           <textarea rows={3} value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
         <div className="field-row">
-          <div className="field" style={{ flex: 1 }}><label>เมมเบอร์</label>
-            <select
-              value={draft.memberId}
-              onChange={(e) => setDraft({ ...draft, memberId: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
-            >
-              <option value="">ไม่มีเมมเบอร์</option>
-              {members.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+          <div className="field" style={{ flex: 1 }}>
+            <label>เมมเบอร์ (เลือกได้มากกว่า 1 คน)</label>
+            {members.length === 0 ? (
+              <p style={{ color: '#9a9490', fontSize: 13, margin: '6px 0' }}>ยังไม่มีเมมเบอร์ในตลาดนี้</p>
+            ) : (
+              <div style={{ border: '1.5px solid var(--line)', borderRadius: 9, padding: 10, maxHeight: 160, overflowY: 'auto' }}>
+                {members.map((c) => (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px', cursor: 'pointer', fontSize: 13.5 }}>
+                    <input
+                      type="checkbox"
+                      checked={draft.memberIds.includes(c.id)}
+                      onChange={(e) => setDraft({
+                        ...draft,
+                        memberIds: e.target.checked ? [...draft.memberIds, c.id] : draft.memberIds.filter((id) => id !== c.id),
+                      })}
+                    />
+                    <span>{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <div className="field" style={{ flex: 1 }}><label>อีเว้นท์</label>
             <select

@@ -37,7 +37,10 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
   const featuredProducts = products.filter((p) => p.is_featured);
 
   let filtered = products;
-  if (memberFilter) filtered = filtered.filter((p) => p.member_id === memberFilter);
+  if (memberFilter) filtered = filtered.filter((p) => {
+    const ids = (p.member_ids && p.member_ids.length > 0) ? p.member_ids : (p.member_id ? [p.member_id] : []);
+    return ids.includes(memberFilter);
+  });
   if (eventFilter) filtered = filtered.filter((p) => p.event_id === eventFilter);
   if (query.trim()) {
     const q = query.trim().toLowerCase();

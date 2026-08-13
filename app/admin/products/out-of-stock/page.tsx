@@ -25,6 +25,12 @@ export default function OutOfStockPage() {
     return categories.find((c) => c.id === id)?.name || '-';
   }
 
+  function namesOf(p: any) {
+    const ids = (p.member_ids && p.member_ids.length > 0) ? p.member_ids : (p.member_id ? [p.member_id] : []);
+    if (ids.length === 0) return '-';
+    return ids.map((id: string) => categories.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '-';
+  }
+
   async function restock(p: any) {
     const qty = Number(restockValues[p.id]);
     if (!qty || qty <= 0) { alert('กรุณาใส่จำนวนที่ถูกต้อง (มากกว่า 0)'); return; }
@@ -73,7 +79,7 @@ export default function OutOfStockPage() {
                       <span style={{ marginLeft: 6, fontSize: 11, background: '#EDEAE4', color: '#8a8378', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ซ่อนอยู่</span>
                     )}</td>
                     <td style={{ fontSize: 12 }}>{p.market === 'dmd' ? '#DMD' : '#GMMTV'}</td>
-                    <td>{nameOf(p.member_id)}</td>
+                    <td>{namesOf(p)}</td>
                     <td>{nameOf(p.event_id)}</td>
                     <td>{p.is_giveaway ? 'ฟรี' : `฿${p.price}`}</td>
                     <td>

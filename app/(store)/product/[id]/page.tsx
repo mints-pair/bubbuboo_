@@ -9,7 +9,7 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
   const { t } = useLang();
   const [p, setP] = useState<any>(null);
-  const [memberName, setMemberName] = useState('');
+  const [memberNames, setMemberNames] = useState<string[]>([]);
   const [eventName, setEventName] = useState('');
   const [promo, setPromo] = useState<any>(null);
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
@@ -24,13 +24,14 @@ export default function ProductPage({ params }: { params: { id: string } }) {
     const { data: product } = await supabase.from('products').select('*').eq('id', params.id).single();
     setP(product);
     setSelectedImgIdx(0);
-    const ids = [product?.member_id, product?.event_id].filter(Boolean);
+    const memberIds: string[] = (product?.member_ids && product.member_ids.length > 0) ? product.member_ids : (product?.member_id ? [product.member_id] : []);
+    const ids = [...memberIds, product?.event_id].filter(Boolean);
     if (ids.length) {
       const { data: cats } = await supabase.from('categories').select('id, name').in('id', ids);
-      setMemberName(cats?.find((c) => c.id === product?.member_id)?.name || '');
+      setMemberNames(memberIds.map((id) => cats?.find((c) => c.id === id)?.name).filter(Boolean) as string[]);
       setEventName(cats?.find((c) => c.id === product?.event_id)?.name || '');
     } else {
-      setMemberName('');
+      setMemberNames([]);
       setEventName('');
     }
     const { data: promoData } = await supabase.from('promotion').select('*').single();
@@ -71,15 +72,15 @@ export default function ProductPage({ params }: { params: { id: string } }) {
       </div>
       <div style={{ flex: 1, minWidth: 260 }}>
         <h1>{p.name}</h1>
-        {(memberName || eventName) && (
+        {(memberNames.length > 0 || eventName) && (
           <div style={{ marginBottom: 8 }}>
-            {memberName && (
-              <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--jade-light)', color: 'var(--jade)', padding: '3px 10px', borderRadius: 99, marginRight: 6 }}>
-                {memberName}
+            {memberNames.map((name) => (
+              <span key={name} style={{ display: 'inline-block', fontSize: 12, background: 'var(--jade-light)', color: 'var(--jade)', padding: '3px 10px', borderRadius: 99, marginRight: 6, marginBottom: 6 }}>
+                {name}
               </span>
-            )}
+            ))}
             {eventName && (
-              <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--marigold)', color: 'var(--ink)', padding: '3px 10px', borderRadius: 99 }}>
+              <span style={{ display: 'inline-block', fontSize: 12, background: 'var(--marigold)', color: 'var(--ink)', padding: '3px 10px', borderRadius: 99, marginBottom: 6 }}>
                 {eventName}
               </span>
             )}

@@ -237,6 +237,8 @@ alter table products add column if not exists category_id uuid references catego
 alter table products add column if not exists is_giveaway boolean not null default false;
 alter table products add column if not exists member_id uuid references categories(id) on delete set null;
 alter table products add column if not exists event_id uuid references categories(id) on delete set null;
+alter table products add column if not exists member_ids uuid[] not null default '{}';
+update products set member_ids = array[member_id] where member_id is not null and cardinality(member_ids) = 0;
 alter table products add column if not exists is_featured boolean not null default false;
 alter table products add column if not exists market text not null default 'gmmtv' check (market in ('gmmtv', 'dmd'));
 alter table products add column if not exists is_hidden boolean not null default false;

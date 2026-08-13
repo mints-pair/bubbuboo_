@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { getCart, removeFromCart, clearCart, getCartSessionId, CartLine } from '@/lib/cart';
 import { useLang } from '@/lib/lang-context';
 import { isDiscountLive, isFreeShippingLive, isFreeShippingEnabled, discountedPrice, effectiveShippingFee, productHasDiscount } from '@/lib/promotion';
+import { compressImageFile } from '@/lib/imageCompress';
 
 type Step = 'cart' | 'payment' | 'done';
 type PaymentMethod = 'qr' | 'wise' | 'truewallet';
@@ -129,9 +130,9 @@ export default function CartPage() {
     setError('');
     setSubmitting(true);
     try {
-      const ext = slipFile.name.split('.').pop();
-      const path = `slips/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('shop-images').upload(path, slipFile);
+      const compressedSlip = await compressImageFile(slipFile, { maxDim: 1400, quality: 0.75 });
+      const path = `slips/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+      const { error: upErr } = await supabase.storage.from('shop-images').upload(path, compressedSlip);
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('shop-images').getPublicUrl(path);
 

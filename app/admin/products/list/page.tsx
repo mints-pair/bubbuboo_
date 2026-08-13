@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
+import { compressImage } from '@/lib/imageCompress';
 
 export default function AdminProductsListPage() {
   const supabase = createClient();
@@ -16,6 +17,9 @@ export default function AdminProductsListPage() {
   const [marketFilter, setMarketFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [clearingId, setClearingId] = useState<string | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
+  const [optProgress, setOptProgress] = useState({ done: 0, total: 0 });
+  const [optResult, setOptResult] = useState<string | null>(null);
 
   const members = categories.filter((c) => c.type === 'member');
   const events = categories.filter((c) => c.type === 'event');
@@ -74,6 +78,70 @@ export default function AdminProductsListPage() {
     load();
   }
 
+  async function optimizeAllImages() {
+    if (optimizing) return;
+    const total = products.reduce((a, p) => a + (p.images?.length || 0), 0);
+    if (total === 0) { alert('ไม่มีรูปภาพให้บีบอัด'); return; }
+    if (!confirm(`บีบอัดรูปภาพสินค้าทั้งหมด (${total} รูป)? อาจใช้เวลาสักครู่ตามจำนวนรูป`)) return;
+
+    setOptimizing(true);
+    setOptResult(null);
+    setOptProgress({ done: 0, total });
+
+    let done = 0;
+    let savedBytes = 0;
+    let changedCount = 0;
+
+    for (const p of products) {
+      if (!p.images || p.images.length === 0) continue;
+      const newImages: string[] = [];
+      let productChanged = false;
+
+      for (const url of p.images) {
+        try {
+          const res = await fetch(url);
+          const blob = await res.blob();
+          // already small enough — not worth re-uploading
+          if (blob.size < 250 * 1024) {
+            newImages.push(url);
+          } else {
+            const compressed = await compressImage(blob, { maxDim: 1200, quality: 0.8 });
+            if (compressed.size < blob.size * 0.9) {
+              const path = `products/opt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+              const { error } = await supabase.storage.from('shop-images').upload(path, compressed);
+              if (!error) {
+                const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
+                newImages.push(data.publicUrl);
+                savedBytes += blob.size - compressed.size;
+                productChanged = true;
+              } else {
+                newImages.push(url);
+              }
+            } else {
+              newImages.push(url);
+            }
+          }
+        } catch {
+          // couldn't fetch (network hiccup etc) — keep the original, don't block the batch
+          newImages.push(url);
+        }
+        done++;
+        setOptProgress({ done, total });
+      }
+
+      if (productChanged) {
+        await supabase.from('products').update({ images: newImages }).eq('id', p.id);
+        changedCount++;
+      }
+    }
+
+    const savedMB = (savedBytes / (1024 * 1024)).toFixed(1);
+    setOptResult(`เสร็จแล้ว — บีบอัดรูปใน ${changedCount} สินค้า ประหยัดพื้นที่ได้ประมาณ ${savedMB} MB`);
+    logAdminAction(`บีบอัดรูปภาพสินค้าทั้งหมด (${changedCount} สินค้า, ประหยัด ~${savedMB} MB)`);
+    setOptimizing(false);
+    load();
+  }
+
   function nameOf(id: string | null) {
     return categories.find((c) => c.id === id)?.name || '-';
   }
@@ -89,6 +157,27 @@ export default function AdminProductsListPage() {
 
   return (
     <div>
+      <div className="card">
+        <h3>เพิ่มประสิทธิภาพรูปภาพ</h3>
+        <p style={{ color: '#8a8378', fontSize: 13.5, marginTop: -6 }}>
+          บีบอัด/ย่อขนาดรูปสินค้าที่มีอยู่แล้วทั้งหมดให้เล็กลง ช่วยลดการใช้แบนด์วิดท์ (cached egress) ของ Supabase โดยไม่กระทบรูปที่ลูกค้าเห็น (แค่ไฟล์เล็กลง) — รูปที่เพิ่งอัปโหลดใหม่ตั้งแต่นี้จะถูกบีบอัดอัตโนมัติอยู่แล้ว ปุ่มนี้ใช้สำหรับรูปเก่าที่เคยอัปโหลดไว้ก่อนหน้านี้
+        </p>
+        {optimizing ? (
+          <div>
+            <p style={{ fontSize: 13.5, marginBottom: 6 }}>กำลังประมวลผล {optProgress.done} / {optProgress.total} รูป...</p>
+            <div style={{ background: 'var(--paper-dim)', borderRadius: 99, height: 8, overflow: 'hidden' }}>
+              <div style={{
+                width: `${optProgress.total ? (optProgress.done / optProgress.total * 100) : 0}%`,
+                background: 'var(--jade)', height: '100%', transition: 'width .2s',
+              }} />
+            </div>
+          </div>
+        ) : (
+          <button className="btn btn-primary" onClick={optimizeAllImages}>เริ่มบีบอัดรูปภาพทั้งหมด</button>
+        )}
+        {optResult && !optimizing && <p style={{ color: 'var(--jade)', marginTop: 10, fontSize: 13.5 }}>{optResult}</p>}
+      </div>
+
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
           <h3 style={{ margin: 0 }}>สินค้าทั้งหมด ({filtered.length}{filtered.length !== products.length ? ` / ${products.length}` : ''})</h3>

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
+import { compressImageFile } from '@/lib/imageCompress';
 
 export default function AdminSettingsPage() {
   const supabase = createClient();
@@ -21,9 +22,11 @@ export default function AdminSettingsPage() {
 
   async function uploadQr(file: File) {
     setUploadingQr(true);
-    const ext = file.name.split('.').pop();
-    const path = `settings/qr-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('shop-images').upload(path, file);
+    // light touch here — over-compressing a QR code can make it unscannable,
+    // so keep resolution/quality high, just trim absurdly large camera photos
+    const compressed = await compressImageFile(file, { maxDim: 900, quality: 0.92 });
+    const path = `settings/qr-${Date.now()}.jpg`;
+    const { error } = await supabase.storage.from('shop-images').upload(path, compressed);
     if (!error) {
       const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
       setSettings((s: any) => ({ ...s, qr_image_url: data.publicUrl }));
@@ -35,9 +38,9 @@ export default function AdminSettingsPage() {
 
   async function uploadLogo(file: File) {
     setUploadingLogo(true);
-    const ext = file.name.split('.').pop();
-    const path = `settings/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('shop-images').upload(path, file);
+    const compressed = await compressImageFile(file, { maxDim: 500, quality: 0.85 });
+    const path = `settings/logo-${Date.now()}.jpg`;
+    const { error } = await supabase.storage.from('shop-images').upload(path, compressed);
     if (!error) {
       const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
       setSettings((s: any) => ({ ...s, logo_url: data.publicUrl }));

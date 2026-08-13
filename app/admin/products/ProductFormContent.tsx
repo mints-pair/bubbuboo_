@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
+import { compressImageFile } from '@/lib/imageCompress';
 
 const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false, market: 'gmmtv' as 'gmmtv' | 'dmd' };
 
@@ -58,9 +59,9 @@ export default function ProductFormContent() {
   async function uploadFiles(files: FileList) {
     setUploading(true);
     const urls: string[] = [];
-    for (const file of Array.from(files)) {
-      const ext = file.name.split('.').pop();
-      const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    for (const rawFile of Array.from(files)) {
+      const file = await compressImageFile(rawFile, { maxDim: 1200, quality: 0.8 });
+      const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
       const { error } = await supabase.storage.from('shop-images').upload(path, file);
       if (!error) {
         const { data } = supabase.storage.from('shop-images').getPublicUrl(path);

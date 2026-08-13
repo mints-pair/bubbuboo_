@@ -69,6 +69,8 @@ export default function OutOfStockPage() {
                     <td><img src={p.thumbnail_url || p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                     <td>{p.name}{p.is_giveaway && (
                       <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
+                    )}{p.is_hidden && (
+                      <span style={{ marginLeft: 6, fontSize: 11, background: '#EDEAE4', color: '#8a8378', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ซ่อนอยู่</span>
                     )}</td>
                     <td style={{ fontSize: 12 }}>{p.market === 'dmd' ? '#DMD' : '#GMMTV'}</td>
                     <td>{nameOf(p.member_id)}</td>

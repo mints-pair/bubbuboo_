@@ -22,7 +22,7 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
 
   async function load() {
     setLoading(true);
-    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', false).eq('market', market).gt('stock', 0).order('created_at', { ascending: false });
+    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', false).eq('market', market).gt('stock', 0).eq('is_hidden', false).order('created_at', { ascending: false });
     setProducts(p || []);
     const { data: c } = await supabase.from('categories').select('*').order('name', { ascending: true });
     setCategories(c || []);

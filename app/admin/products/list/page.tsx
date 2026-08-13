@@ -69,6 +69,13 @@ export default function AdminProductsListPage() {
     load();
   }
 
+  async function toggleHidden(p: any) {
+    const next = !p.is_hidden;
+    await supabase.from('products').update({ is_hidden: next }).eq('id', p.id);
+    logAdminAction(`${next ? 'ซ่อน' : 'เลิกซ่อน'}สินค้า "${p.name}" จากหน้าร้าน`);
+    load();
+  }
+
   async function clearReservation(p: any) {
     if (!confirm(`ล้างการจอง "${p.name}" ที่กำลังจ่ายเงินอยู่ (ยังไม่มีสลิป)? ใช้เมื่อลูกค้าติดต่อมาว่าไม่เอาแล้วเท่านั้น`)) return;
     setClearingId(p.id);
@@ -274,6 +281,8 @@ export default function AdminProductsListPage() {
                       <td><img src={p.thumbnail_url || p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                       <td>{p.name}{p.is_giveaway && (
                         <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
+                      )}{p.is_hidden && (
+                        <span style={{ marginLeft: 6, fontSize: 11, background: '#EDEAE4', color: '#8a8378', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ซ่อนอยู่</span>
                       )}</td>
                       <td style={{ fontSize: 12 }}>{p.market === 'dmd' ? '#DMD' : '#GMMTV'}</td>
                       <td>{nameOf(p.member_id)}</td>
@@ -297,6 +306,13 @@ export default function AdminProductsListPage() {
                         {pendingQty === 0 && reservedQty === 0 && '-'}
                       </td>
                       <td style={{ whiteSpace: 'nowrap' }}>
+                        <button
+                          className="btn btn-outline"
+                          style={{ padding: '6px 10px', fontSize: 12, marginRight: 6, color: p.is_hidden ? 'var(--jade)' : undefined, borderColor: p.is_hidden ? 'var(--jade)' : undefined }}
+                          onClick={() => toggleHidden(p)}
+                        >
+                          {p.is_hidden ? 'แสดง' : 'ซ่อน'}
+                        </button>
                         <Link href={`/admin/products?edit=${p.id}`} className="btn btn-outline" style={{ padding: '6px 10px', fontSize: 12, marginRight: 6, textDecoration: 'none', display: 'inline-block' }}>แก้ไข</Link>
                         <button className="btn btn-outline" style={{ padding: '6px 10px', fontSize: 12, color: 'var(--rose)' }} onClick={() => deleteProduct(p.id)}>ลบ</button>
                       </td>

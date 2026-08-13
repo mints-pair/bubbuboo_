@@ -42,8 +42,11 @@ input, textarea, select { font-family: var(--font-body); }
 .btn-outline { background: none; border: 1.5px solid var(--line); color: var(--ink); }
 .field { margin-bottom: 14px; }
 .field label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #5a5257; }
-.field input, .field textarea {
+.field input:not([type="checkbox"]):not([type="radio"]), .field textarea {
   width: 100%; padding: 10px 12px; border-radius: 9px; border: 1.5px solid var(--line); font-size: 14px;
+}
+.field input[type="checkbox"], .field input[type="radio"] {
+  width: auto; padding: 0; border: revert; border-radius: revert; margin: revert; flex-shrink: 0;
 }
 .container { max-width: 1000px; margin: 0 auto; padding: 24px 20px 60px; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; }

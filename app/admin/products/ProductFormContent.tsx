@@ -267,7 +267,7 @@ export default function ProductFormContent() {
             {members.length === 0 ? (
               <p style={{ color: '#9a9490', fontSize: 13, margin: '6px 0' }}>ยังไม่มีเมมเบอร์ในตลาดนี้</p>
             ) : (
-              <div style={{ border: '1.5px solid var(--line)', borderRadius: 9, padding: 10, maxHeight: 160, overflowY: 'auto' }}>
+              <div style={{ border: '1.5px solid var(--line)', borderRadius: 9, padding: 10, maxHeight: 160, overflowY: 'auto', overflowX: 'hidden' }}>
                 {members.map((c) => (
                   <label key={c.id} style={{
                     display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start',
@@ -281,7 +281,7 @@ export default function ProductFormContent() {
                         ...draft,
                         memberIds: e.target.checked ? [...draft.memberIds, c.id] : draft.memberIds.filter((id) => id !== c.id),
                       })}
-                      style={{ margin: 0, flexShrink: 0 }}
+                      style={{ width: 18, height: 18, minWidth: 18, padding: 0, border: '1.5px solid var(--line)', borderRadius: 4, margin: 0, flexShrink: 0 }}
                     />
                     <span>{c.name}</span>
                   </label>

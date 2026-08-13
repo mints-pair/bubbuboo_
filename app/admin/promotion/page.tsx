@@ -140,6 +140,7 @@ export default function AdminPromotionPage() {
                         type="checkbox"
                         checked={(promo.discount_product_ids || []).includes(p.id)}
                         onChange={() => toggleProduct(p.id)}
+                        style={{ width: 18, height: 18, minWidth: 18, padding: 0, border: '1.5px solid var(--line)', borderRadius: 4, margin: 0, flexShrink: 0 }}
                       />
                       <img src={p.images?.[0] || ''} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, background: 'var(--paper-dim)' }} />
                       <span style={{ fontSize: 13.5 }}>{p.name}</span>

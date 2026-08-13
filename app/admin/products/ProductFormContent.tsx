@@ -269,7 +269,11 @@ export default function ProductFormContent() {
             ) : (
               <div style={{ border: '1.5px solid var(--line)', borderRadius: 9, padding: 10, maxHeight: 160, overflowY: 'auto' }}>
                 {members.map((c) => (
-                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 2px', cursor: 'pointer', fontSize: 13.5 }}>
+                  <label key={c.id} style={{
+                    display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start',
+                    gap: 8, padding: '6px 4px', cursor: 'pointer', fontSize: 13.5,
+                    fontWeight: 400, color: 'var(--ink)', marginBottom: 0, textAlign: 'left',
+                  }}>
                     <input
                       type="checkbox"
                       checked={draft.memberIds.includes(c.id)}
@@ -277,6 +281,7 @@ export default function ProductFormContent() {
                         ...draft,
                         memberIds: e.target.checked ? [...draft.memberIds, c.id] : draft.memberIds.filter((id) => id !== c.id),
                       })}
+                      style={{ margin: 0, flexShrink: 0 }}
                     />
                     <span>{c.name}</span>
                   </label>

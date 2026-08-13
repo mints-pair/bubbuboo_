@@ -212,13 +212,13 @@ export default function AdminProductsListPage() {
           <div style={{ display: 'flex', gap: 8 }}>
             {outOfStockCount > 0 && (
               <Link href="/admin/products/out-of-stock" className="btn btn-outline" style={{ textDecoration: 'none', color: 'var(--rose)', borderColor: 'var(--rose)' }}>
-                ของหมด ({outOfStockCount})
+                หมดสต็อค ({outOfStockCount})
               </Link>
             )}
             <Link href="/admin/products" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ เพิ่มสินค้าใหม่</Link>
           </div>
         </div>
-        <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: 4 }}>สินค้าที่สต็อกหมด (0 ชิ้น) จะไม่แสดงในตารางนี้และไม่โชว์ในหน้าร้าน — ไปดูและเติมสต็อคได้ที่แท็บ "ของหมด"</p>
+        <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: 4 }}>สินค้าที่สต็อกหมด (0 ชิ้น) จะไม่แสดงในตารางนี้และไม่โชว์ในหน้าร้าน — ไปดูและเติมสต็อคได้ที่แท็บ "หมดสต็อค"</p>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '14px 0' }}>
           <input

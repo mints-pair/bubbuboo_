@@ -48,7 +48,7 @@ export default function OutOfStockPage() {
     <div>
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
-          <h3 style={{ margin: 0 }}>ของหมด ({products.length})</h3>
+          <h3 style={{ margin: 0 }}>หมดสต็อค ({products.length})</h3>
           <Link href="/admin/products/list" className="btn btn-outline" style={{ textDecoration: 'none' }}>← กลับไปรายการสินค้า</Link>
         </div>
         <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: 4, marginBottom: 14 }}>

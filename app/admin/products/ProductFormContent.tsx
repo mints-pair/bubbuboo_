@@ -12,16 +12,16 @@ export default function ProductFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [categories, setCategories] = useState<any[]>([]);
-  const [newMemberName, setNewMemberName] = useState('');
-  const [newEventName, setNewEventName] = useState('');
+  const [newMemberName, setNewMemberName] = useState({ gmmtv: '', dmd: '' });
+  const [newEventName, setNewEventName] = useState({ gmmtv: '', dmd: '' });
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const members = categories.filter((c) => c.type === 'member');
-  const events = categories.filter((c) => c.type === 'event');
+  const members = categories.filter((c) => c.type === 'member' && c.market === draft.market);
+  const events = categories.filter((c) => c.type === 'event' && c.market === draft.market);
 
   async function loadCategories() {
     const { data: c } = await supabase.from('categories').select('*').order('name', { ascending: true });
@@ -40,12 +40,12 @@ export default function ProductFormContent() {
     if (editId) loadEditTarget(editId);
   }, []);
 
-  async function addCategory(type: 'member' | 'event', name: string, clear: () => void) {
+  async function addCategory(type: 'member' | 'event', market: 'gmmtv' | 'dmd', name: string, clear: () => void) {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const { error } = await supabase.from('categories').insert({ name: trimmed, type });
+    const { error } = await supabase.from('categories').insert({ name: trimmed, type, market });
     if (error) { alert('เพิ่มไม่สำเร็จ: ' + error.message); return; }
-    logAdminAction(`เพิ่ม${type === 'member' ? 'เมมเบอร์' : 'อีเว้นท์'} "${trimmed}"`);
+    logAdminAction(`เพิ่ม${type === 'member' ? 'เมมเบอร์' : 'อีเว้นท์'} "${trimmed}" (${market === 'dmd' ? '#ตลาดนัดDMD' : '#ตลาดนัดGMMTV'})`);
     clear();
     loadCategories();
   }
@@ -145,60 +145,78 @@ export default function ProductFormContent() {
     <div>
       <div className="card">
         <h3>หมวดหมู่: เมมเบอร์</h3>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <input
-            value={newMemberName}
-            onChange={(e) => setNewMemberName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addCategory('member', newMemberName, () => setNewMemberName(''))}
-            placeholder="ชื่อเมมเบอร์ใหม่"
-            style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
-          />
-          <button className="btn btn-outline" onClick={() => addCategory('member', newMemberName, () => setNewMemberName(''))}>เพิ่มเมมเบอร์</button>
-        </div>
-        {members.length === 0 ? (
-          <p style={{ color: '#9a9490', fontSize: 13.5 }}>ยังไม่มีเมมเบอร์ — เพิ่มไว้ก่อนเพื่อเลือกใช้ตอนเพิ่มสินค้า</p>
-        ) : (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {members.map((c) => (
-              <span key={c.id} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--jade-light)', color: 'var(--jade)',
-                fontSize: 12.5, fontWeight: 600, padding: '5px 10px', borderRadius: 99,
-              }}>
-                {c.name}
-                <button onClick={() => deleteCategory(c.id, c.name, 'member')} style={{ background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
-              </span>
-            ))}
-          </div>
-        )}
+        <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: -6, marginBottom: 16 }}>เมมเบอร์ของแต่ละตลาดแยกจากกัน ไม่ปนกัน</p>
+        {(['gmmtv', 'dmd'] as const).map((mkt) => {
+          const list = categories.filter((c) => c.type === 'member' && c.market === mkt);
+          return (
+            <div key={mkt} style={{ marginBottom: mkt === 'gmmtv' ? 20 : 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 8 }}>{mkt === 'gmmtv' ? '#ตลาดนัดGMMTV' : '#ตลาดนัดDMD'}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input
+                  value={newMemberName[mkt]}
+                  onChange={(e) => setNewMemberName((v) => ({ ...v, [mkt]: e.target.value }))}
+                  onKeyDown={(e) => e.key === 'Enter' && addCategory('member', mkt, newMemberName[mkt], () => setNewMemberName((v) => ({ ...v, [mkt]: '' })))}
+                  placeholder="ชื่อเมมเบอร์ใหม่"
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+                />
+                <button className="btn btn-outline" onClick={() => addCategory('member', mkt, newMemberName[mkt], () => setNewMemberName((v) => ({ ...v, [mkt]: '' })))}>เพิ่มเมมเบอร์</button>
+              </div>
+              {list.length === 0 ? (
+                <p style={{ color: '#9a9490', fontSize: 13.5 }}>ยังไม่มีเมมเบอร์ในตลาดนี้</p>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {list.map((c) => (
+                    <span key={c.id} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--jade-light)', color: 'var(--jade)',
+                      fontSize: 12.5, fontWeight: 600, padding: '5px 10px', borderRadius: 99,
+                    }}>
+                      {c.name}
+                      <button onClick={() => deleteCategory(c.id, c.name, 'member')} style={{ background: 'none', border: 'none', color: 'var(--jade)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="card">
         <h3>หมวดหมู่: อีเว้นท์</h3>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          <input
-            value={newEventName}
-            onChange={(e) => setNewEventName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addCategory('event', newEventName, () => setNewEventName(''))}
-            placeholder="ชื่ออีเว้นท์ใหม่"
-            style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
-          />
-          <button className="btn btn-outline" onClick={() => addCategory('event', newEventName, () => setNewEventName(''))}>เพิ่มอีเว้นท์</button>
-        </div>
-        {events.length === 0 ? (
-          <p style={{ color: '#9a9490', fontSize: 13.5 }}>ยังไม่มีอีเว้นท์ — เพิ่มไว้ก่อนเพื่อเลือกใช้ตอนเพิ่มสินค้า</p>
-        ) : (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {events.map((c) => (
-              <span key={c.id} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--marigold)', color: 'var(--ink)',
-                fontSize: 12.5, fontWeight: 600, padding: '5px 10px', borderRadius: 99,
-              }}>
-                {c.name}
-                <button onClick={() => deleteCategory(c.id, c.name, 'event')} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
-              </span>
-            ))}
-          </div>
-        )}
+        <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: -6, marginBottom: 16 }}>อีเว้นท์ของแต่ละตลาดแยกจากกัน ไม่ปนกัน</p>
+        {(['gmmtv', 'dmd'] as const).map((mkt) => {
+          const list = categories.filter((c) => c.type === 'event' && c.market === mkt);
+          return (
+            <div key={mkt} style={{ marginBottom: mkt === 'gmmtv' ? 20 : 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 8 }}>{mkt === 'gmmtv' ? '#ตลาดนัดGMMTV' : '#ตลาดนัดDMD'}</div>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input
+                  value={newEventName[mkt]}
+                  onChange={(e) => setNewEventName((v) => ({ ...v, [mkt]: e.target.value }))}
+                  onKeyDown={(e) => e.key === 'Enter' && addCategory('event', mkt, newEventName[mkt], () => setNewEventName((v) => ({ ...v, [mkt]: '' })))}
+                  placeholder="ชื่ออีเว้นท์ใหม่"
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+                />
+                <button className="btn btn-outline" onClick={() => addCategory('event', mkt, newEventName[mkt], () => setNewEventName((v) => ({ ...v, [mkt]: '' })))}>เพิ่มอีเว้นท์</button>
+              </div>
+              {list.length === 0 ? (
+                <p style={{ color: '#9a9490', fontSize: 13.5 }}>ยังไม่มีอีเว้นท์ในตลาดนี้</p>
+              ) : (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {list.map((c) => (
+                    <span key={c.id} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--marigold)', color: 'var(--ink)',
+                      fontSize: 12.5, fontWeight: 600, padding: '5px 10px', borderRadius: 99,
+                    }}>
+                      {c.name}
+                      <button onClick={() => deleteCategory(c.id, c.name, 'event')} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', fontSize: 13, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="card" ref={formRef}>
@@ -228,11 +246,11 @@ export default function ProductFormContent() {
           <label>ลงขายที่ตลาด</label>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv' })} />
+              <input type="radio" checked={draft.market === 'gmmtv'} onChange={() => setDraft({ ...draft, market: 'gmmtv', memberId: '', eventId: '' })} />
               <span>#ตลาดนัดGMMTV</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd' })} />
+              <input type="radio" checked={draft.market === 'dmd'} onChange={() => setDraft({ ...draft, market: 'dmd', memberId: '', eventId: '' })} />
               <span>#ตลาดนัดDMD</span>
             </label>
           </div>

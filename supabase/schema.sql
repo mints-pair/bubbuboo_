@@ -225,6 +225,14 @@ create policy "public read categories" on categories
 create policy "admin manage categories" on categories
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
+alter table categories add column if not exists market text not null default 'gmmtv' check (market in ('gmmtv', 'dmd'));
+-- the same category name should be reusable across the two markets (e.g. a
+-- member named "Bonnie" might exist as a separate category in both), so
+-- drop the old single-column uniqueness and replace it with a composite one
+alter table categories drop constraint if exists categories_name_key;
+drop index if exists categories_name_market_type_idx;
+create unique index categories_name_market_type_idx on categories (name, type, market);
+
 alter table products add column if not exists category_id uuid references categories(id) on delete set null;
 alter table products add column if not exists is_giveaway boolean not null default false;
 alter table products add column if not exists member_id uuid references categories(id) on delete set null;

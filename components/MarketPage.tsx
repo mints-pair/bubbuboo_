@@ -31,8 +31,8 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
     setLoading(false);
   }
 
-  const members = categories.filter((c) => c.type === 'member');
-  const events = categories.filter((c) => c.type === 'event');
+  const members = categories.filter((c) => c.type === 'member' && c.market === market);
+  const events = categories.filter((c) => c.type === 'event' && c.market === market);
   const hasActiveFilter = !!(query.trim() || memberFilter || eventFilter);
   const featuredProducts = products.filter((p) => p.is_featured);
 

@@ -21,8 +21,8 @@ export default function AdminProductsListPage() {
   const [optProgress, setOptProgress] = useState({ done: 0, total: 0 });
   const [optResult, setOptResult] = useState<string | null>(null);
 
-  const members = categories.filter((c) => c.type === 'member');
-  const events = categories.filter((c) => c.type === 'event');
+  const members = categories.filter((c) => c.type === 'member' && (!marketFilter || c.market === marketFilter));
+  const events = categories.filter((c) => c.type === 'event' && (!marketFilter || c.market === marketFilter));
 
   async function load() {
     const { data: p } = await supabase.from('products').select('*').order('created_at', { ascending: false });
@@ -227,7 +227,7 @@ export default function AdminProductsListPage() {
             placeholder="ค้นหาชื่อสินค้า หรือแท็ก..."
             style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
           />
-          <select value={marketFilter} onChange={(e) => setMarketFilter(e.target.value)}
+          <select value={marketFilter} onChange={(e) => { setMarketFilter(e.target.value); setMemberFilter(''); setEventFilter(''); }}
             style={{ padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14, background: '#fff' }}>
             <option value="">ทุกตลาด</option>
             <option value="gmmtv">#ตลาดนัดGMMTV</option>

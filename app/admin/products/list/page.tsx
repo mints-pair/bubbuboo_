@@ -166,7 +166,7 @@ export default function AdminProductsListPage() {
     return categories.find((c) => c.id === id)?.name || '-';
   }
 
-  let filtered = products;
+  let filtered = products.filter((p) => p.stock > 0);
   if (memberFilter) filtered = filtered.filter((p) => p.member_id === memberFilter);
   if (eventFilter) filtered = filtered.filter((p) => p.event_id === eventFilter);
   if (marketFilter) filtered = filtered.filter((p) => p.market === marketFilter);
@@ -174,6 +174,7 @@ export default function AdminProductsListPage() {
     const q = query.trim().toLowerCase();
     filtered = filtered.filter((p) => (p.name + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(q));
   }
+  const outOfStockCount = products.filter((p) => p.stock <= 0).length;
 
   return (
     <div>
@@ -200,9 +201,17 @@ export default function AdminProductsListPage() {
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
-          <h3 style={{ margin: 0 }}>สินค้าทั้งหมด ({filtered.length}{filtered.length !== products.length ? ` / ${products.length}` : ''})</h3>
-          <Link href="/admin/products" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ เพิ่มสินค้าใหม่</Link>
+          <h3 style={{ margin: 0 }}>สินค้าที่มีสต็อก ({filtered.length}{query || memberFilter || eventFilter || marketFilter ? ` / ${products.filter((p) => p.stock > 0).length}` : ''})</h3>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {outOfStockCount > 0 && (
+              <Link href="/admin/products/out-of-stock" className="btn btn-outline" style={{ textDecoration: 'none', color: 'var(--rose)', borderColor: 'var(--rose)' }}>
+                ของหมด ({outOfStockCount})
+              </Link>
+            )}
+            <Link href="/admin/products" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ เพิ่มสินค้าใหม่</Link>
+          </div>
         </div>
+        <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: 4 }}>สินค้าที่สต็อกหมด (0 ชิ้น) จะไม่แสดงในตารางนี้และไม่โชว์ในหน้าร้าน — ไปดูและเติมสต็อคได้ที่แท็บ "ของหมด"</p>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '14px 0' }}>
           <input

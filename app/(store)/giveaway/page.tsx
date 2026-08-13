@@ -15,7 +15,7 @@ export default function GiveawayPage() {
   }, []);
 
   async function load() {
-    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', true).order('created_at', { ascending: false });
+    const { data: p } = await supabase.from('products').select('*').eq('is_giveaway', true).gt('stock', 0).order('created_at', { ascending: false });
     setProducts(p || []);
     setLoading(false);
   }

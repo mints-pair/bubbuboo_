@@ -91,6 +91,7 @@ export default function AdminProductsListPage() {
     let done = 0;
     let savedBytes = 0;
     let changedCount = 0;
+    let thumbsCreated = 0;
 
     for (const p of products) {
       if (!p.images || p.images.length === 0) continue;
@@ -133,11 +134,30 @@ export default function AdminProductsListPage() {
         await supabase.from('products').update({ images: newImages }).eq('id', p.id);
         changedCount++;
       }
+
+      // backfill a small listing thumbnail if this product doesn't have one yet
+      if (!p.thumbnail_url && newImages.length > 0) {
+        try {
+          const coverUrl = newImages[0];
+          const res = await fetch(coverUrl);
+          const blob = await res.blob();
+          const thumbBlob = await compressImage(blob, { maxDim: 320, quality: 0.7 });
+          const path = `products/thumb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const { error } = await supabase.storage.from('shop-images').upload(path, thumbBlob);
+          if (!error) {
+            const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
+            await supabase.from('products').update({ thumbnail_url: data.publicUrl }).eq('id', p.id);
+            thumbsCreated++;
+          }
+        } catch {
+          // skip — listing pages fall back to the full image for this product
+        }
+      }
     }
 
     const savedMB = (savedBytes / (1024 * 1024)).toFixed(1);
-    setOptResult(`เสร็จแล้ว — บีบอัดรูปใน ${changedCount} สินค้า ประหยัดพื้นที่ได้ประมาณ ${savedMB} MB`);
-    logAdminAction(`บีบอัดรูปภาพสินค้าทั้งหมด (${changedCount} สินค้า, ประหยัด ~${savedMB} MB)`);
+    setOptResult(`เสร็จแล้ว — บีบอัดรูปใน ${changedCount} สินค้า, สร้าง thumbnail ใหม่ ${thumbsCreated} รูป ประหยัดพื้นที่ได้ประมาณ ${savedMB} MB`);
+    logAdminAction(`บีบอัดรูปภาพสินค้าทั้งหมด (${changedCount} สินค้า, thumbnail ${thumbsCreated} รูป, ประหยัด ~${savedMB} MB)`);
     setOptimizing(false);
     load();
   }
@@ -160,7 +180,7 @@ export default function AdminProductsListPage() {
       <div className="card">
         <h3>เพิ่มประสิทธิภาพรูปภาพ</h3>
         <p style={{ color: '#8a8378', fontSize: 13.5, marginTop: -6 }}>
-          บีบอัด/ย่อขนาดรูปสินค้าที่มีอยู่แล้วทั้งหมดให้เล็กลง ช่วยลดการใช้แบนด์วิดท์ (cached egress) ของ Supabase โดยไม่กระทบรูปที่ลูกค้าเห็น (แค่ไฟล์เล็กลง) — รูปที่เพิ่งอัปโหลดใหม่ตั้งแต่นี้จะถูกบีบอัดอัตโนมัติอยู่แล้ว ปุ่มนี้ใช้สำหรับรูปเก่าที่เคยอัปโหลดไว้ก่อนหน้านี้
+          บีบอัด/ย่อขนาดรูปสินค้าที่มีอยู่แล้วทั้งหมดให้เล็กลง และสร้างรูปตัวอย่างขนาดเล็ก (thumbnail) สำหรับหน้ารายการสินค้าโดยเฉพาะ ช่วยลดการใช้แบนด์วิดท์ (cached egress) ของ Supabase ได้มากกว่าการบีบอัดรูปเดิมเพียงอย่างเดียว โดยไม่กระทบรูปที่ลูกค้าเห็น — รูปที่เพิ่งอัปโหลด/บันทึกสินค้าใหม่ตั้งแต่นี้จะมี thumbnail ให้อัตโนมัติอยู่แล้ว ปุ่มนี้ใช้สำหรับสินค้าเก่าที่เคยเพิ่มไว้ก่อนหน้านี้
         </p>
         {optimizing ? (
           <div>
@@ -242,7 +262,7 @@ export default function AdminProductsListPage() {
                           {p.is_featured ? '★' : '☆'}
                         </button>
                       </td>
-                      <td><img src={p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
+                      <td><img src={p.thumbnail_url || p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                       <td>{p.name}{p.is_giveaway && (
                         <span style={{ marginLeft: 6, fontSize: 11, background: 'var(--jade-light)', color: 'var(--jade)', padding: '2px 7px', borderRadius: 99, fontWeight: 700 }}>ของแจก</span>
                       )}</td>

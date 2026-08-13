@@ -231,6 +231,7 @@ alter table products add column if not exists member_id uuid references categori
 alter table products add column if not exists event_id uuid references categories(id) on delete set null;
 alter table products add column if not exists is_featured boolean not null default false;
 alter table products add column if not exists market text not null default 'gmmtv' check (market in ('gmmtv', 'dmd'));
+alter table products add column if not exists thumbnail_url text;
 
 -- ============================================================
 -- CART RESERVATIONS (10-minute hold, starts when a customer reaches the

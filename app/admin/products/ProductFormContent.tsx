@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
-import { compressImageFile } from '@/lib/imageCompress';
+import { compressImageFile, compressImage } from '@/lib/imageCompress';
 
 const emptyDraft = { name: '', description: '', price: '', shippingFee: '', stock: '', tags: '', images: [] as string[], memberId: '', eventId: '', isGiveaway: false, isFeatured: false, market: 'gmmtv' as 'gmmtv' | 'dmd' };
 
@@ -17,6 +17,7 @@ export default function ProductFormContent() {
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   const members = categories.filter((c) => c.type === 'member');
@@ -74,7 +75,30 @@ export default function ProductFormContent() {
 
   async function saveProduct() {
     if (!draft.name || (!draft.isGiveaway && !draft.price)) { alert('กรุณากรอกชื่อสินค้าและราคา'); return; }
-    const payload = {
+    setSaving(true);
+
+    // regenerate a small thumbnail (used on listing pages) from whatever
+    // the current cover image is — keeps it correct even if images were
+    // reordered/removed before saving. If this fails for any reason, we
+    // just skip it and the listing falls back to the full-size image.
+    let thumbnailUrl: string | null = null;
+    if (draft.images.length > 0) {
+      try {
+        const res = await fetch(draft.images[0]);
+        const blob = await res.blob();
+        const thumbBlob = await compressImage(blob, { maxDim: 320, quality: 0.7 });
+        const path = `products/thumb-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const { error } = await supabase.storage.from('shop-images').upload(path, thumbBlob);
+        if (!error) {
+          const { data } = supabase.storage.from('shop-images').getPublicUrl(path);
+          thumbnailUrl = data.publicUrl;
+        }
+      } catch {
+        // ignore — fall back to full image on listing pages
+      }
+    }
+
+    const payload: any = {
       name: draft.name,
       description: draft.description,
       price: draft.isGiveaway ? 0 : Number(draft.price) || 0,
@@ -88,6 +112,7 @@ export default function ProductFormContent() {
       is_featured: draft.isFeatured,
       market: draft.market,
     };
+    if (thumbnailUrl) payload.thumbnail_url = thumbnailUrl;
     const wasEditing = !!editingId;
     if (editingId) {
       await supabase.from('products').update(payload).eq('id', editingId);
@@ -98,6 +123,7 @@ export default function ProductFormContent() {
     }
     setDraft(emptyDraft);
     setEditingId(null);
+    setSaving(false);
     // came here to edit one specific item from the list page -> go back to it
     if (wasEditing) router.push('/admin/products/list');
   }
@@ -264,7 +290,7 @@ export default function ProductFormContent() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-primary" onClick={saveProduct}>{editingId ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้า'}</button>
+          <button className="btn btn-primary" disabled={saving} onClick={saveProduct}>{saving ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้า'}</button>
           {editingId && <button className="btn btn-outline" onClick={() => { setEditingId(null); setDraft(emptyDraft); router.push('/admin/products'); }}>ยกเลิก</button>}
         </div>
       </div>

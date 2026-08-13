@@ -60,7 +60,7 @@ export default function MarketPage({ market, heading }: { market: 'gmmtv' | 'dmd
     const finalPrice = productDiscounted ? discountedPrice(p.id, p.price, promo) : p.price;
     return (
       <Link key={p.id} href={`/product/${p.id}`} className="p-card">
-        <img className="p-thumb" src={p.images?.[0] || ''} alt={p.name} />
+        <img className="p-thumb" src={p.thumbnail_url || p.images?.[0] || ''} alt={p.name} />
         <div className="p-body">
           <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 5, minHeight: 38 }}>{p.name}</div>
           {productDiscounted ? (

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { getBidSessionId, getSavedBidderInfo, saveBidderInfo } from '@/lib/auctionSession';
+import { useLang } from '@/lib/lang-context';
 
 function maskName(name: string) {
   if (!name) return '***';
@@ -12,6 +13,7 @@ function maskName(name: string) {
 
 export default function AuctionDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
+  const { t } = useLang();
   const [auction, setAuction] = useState<any>(null);
   const [bids, setBids] = useState<any[]>([]);
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
@@ -43,7 +45,7 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
   }
 
   if (loading) return <div className="container" />;
-  if (!auction) return <div className="container">ไม่พบรายการประมูลนี้</div>;
+  if (!auction) return <div className="container">{t('auction.notFound')}</div>;
 
   const ended = new Date(auction.ends_at).getTime() <= now || auction.status !== 'active';
   const alreadyPaid = auction.status === 'completed';
@@ -54,8 +56,8 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
   async function submitBid() {
     setError('');
     const amount = Number(bidAmount);
-    if (!amount || amount < minNext) { setError(`ราคาต้องอย่างน้อย ฿${minNext.toLocaleString('th-TH')}`); return; }
-    if (!bidderName.trim() || !bidderContact.trim()) { setError('กรุณากรอกชื่อและช่องทางติดต่อ'); return; }
+    if (!amount || amount < minNext) { setError(t('auction.errorMinBid', { n: minNext.toLocaleString('th-TH') })); return; }
+    if (!bidderName.trim() || !bidderContact.trim()) { setError(t('auction.errorFillAll')); return; }
     setSubmitting(true);
     try {
       const res = await fetch(`/api/auctions/${params.id}/bid`, {
@@ -64,14 +66,14 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
         body: JSON.stringify({ amount, name: bidderName, contact: bidderContact, sessionId: getBidSessionId() }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || 'บิดไม่สำเร็จ'); await load(); return; }
+      if (!res.ok) { setError(data.error || t('auction.errorGeneric')); await load(); return; }
       saveBidderInfo({ name: bidderName, contact: bidderContact });
       setBidAmount('');
       setSuccess(true);
       setTimeout(() => setSuccess(false), 2000);
       await load();
     } catch {
-      setError('เกิดข้อผิดพลาด กรุณาลองใหม่');
+      setError(t('auction.errorGeneric'));
     } finally {
       setSubmitting(false);
     }
@@ -81,7 +83,7 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
 
   return (
     <div className="container">
-      <Link href="/auction" style={{ display: 'inline-block', marginBottom: 14, color: 'var(--jade)', fontSize: 13.5, fontWeight: 600 }}>← กลับไปรายการประมูล</Link>
+      <Link href="/auction" style={{ display: 'inline-block', marginBottom: 14, color: 'var(--jade)', fontSize: 13.5, fontWeight: 600 }}>{t('auction.back')}</Link>
       <div style={{ display: 'flex', gap: 30, flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: 260, maxWidth: 420 }}>
           <img src={imgs[selectedImgIdx]} alt={auction.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 14, background: 'var(--paper-dim)' }} />
@@ -97,15 +99,15 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
         <div style={{ flex: 1, minWidth: 260 }}>
           <h1>{auction.name}</h1>
           <p style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#5a5257' }}>{auction.description}</p>
-          <div style={{ fontSize: 13, color: '#7d7570', marginBottom: 14 }}>ค่าจัดส่ง ฿{Number(auction.shipping_fee).toLocaleString('th-TH')}</div>
+          <div style={{ fontSize: 13, color: '#7d7570', marginBottom: 14 }}>{t('auction.shippingFee')} ฿{Number(auction.shipping_fee).toLocaleString('th-TH')}</div>
 
           <div className="card">
-            <div style={{ fontSize: 12.5, color: '#8a8378', marginBottom: 4 }}>{auction.current_bid ? 'ราคาสูงสุดตอนนี้' : 'ราคาเริ่มต้น'}</div>
+            <div style={{ fontSize: 12.5, color: '#8a8378', marginBottom: 4 }}>{auction.current_bid ? t('auction.currentBid') : t('auction.startingPrice')}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 30, fontWeight: 700, color: 'var(--rose)' }}>
               ฿{Number(auction.current_bid || auction.starting_price).toLocaleString('th-TH')}
             </div>
             {auction.current_bid && (
-              <div style={{ fontSize: 12.5, color: '#8a8378', marginTop: 2 }}>ผู้นำ: {maskName(auction.current_bidder_name)}</div>
+              <div style={{ fontSize: 12.5, color: '#8a8378', marginTop: 2 }}>{t('auction.leadingBidder', { name: maskName(auction.current_bidder_name) })}</div>
             )}
 
             {!ended ? (
@@ -114,36 +116,36 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
                   marginTop: 14, padding: '8px 12px', borderRadius: 9, background: 'var(--marigold)', color: 'var(--ink)',
                   fontWeight: 700, fontSize: 13.5, textAlign: 'center',
                 }}>
-                  <AuctionCountdown endsAt={auction.ends_at} />
+                  <AuctionCountdown endsAt={auction.ends_at} t={t} />
                 </div>
 
                 <div style={{ marginTop: 16 }}>
-                  <div className="field"><label>ราคาที่จะเสนอ (ขั้นต่ำ ฿{minNext.toLocaleString('th-TH')})</label>
+                  <div className="field"><label>{t('auction.bidAmountLabel', { n: minNext.toLocaleString('th-TH') })}</label>
                     <input type="number" value={bidAmount} onChange={(e) => setBidAmount(e.target.value)} placeholder={String(minNext)} /></div>
-                  <div className="field"><label>ชื่อของคุณ</label>
+                  <div className="field"><label>{t('auction.yourName')}</label>
                     <input value={bidderName} onChange={(e) => setBidderName(e.target.value)} /></div>
-                  <div className="field"><label>เบอร์โทร หรือ บัญชี X ที่ติดต่อได้</label>
-                    <input value={bidderContact} onChange={(e) => setBidderContact(e.target.value)} placeholder="08xxxxxxxx หรือ @your_account" /></div>
+                  <div className="field"><label>{t('auction.yourContact')}</label>
+                    <input value={bidderContact} onChange={(e) => setBidderContact(e.target.value)} placeholder={t('auction.contactPlaceholder')} /></div>
                   {error && <p style={{ color: 'var(--rose)' }}>{error}</p>}
-                  {success && <p style={{ color: 'var(--jade)', fontWeight: 600 }}>✓ บิดสำเร็จ! ตอนนี้คุณเป็นผู้นำ</p>}
+                  {success && <p style={{ color: 'var(--jade)', fontWeight: 600 }}>{t('auction.bidSuccess')}</p>}
                   <button className="btn btn-primary" disabled={submitting} onClick={submitBid}>
-                    {submitting ? 'กำลังส่ง...' : 'เสนอราคา'}
+                    {submitting ? t('auction.placingBid') : t('auction.placeBid')}
                   </button>
                 </div>
               </>
             ) : (
               <div style={{ marginTop: 14 }}>
                 <div style={{ padding: '8px 12px', borderRadius: 9, background: '#EDEAE4', color: '#8a8378', fontWeight: 700, fontSize: 13.5, textAlign: 'center' }}>
-                  ปิดประมูลแล้ว
+                  {t('auction.closedLabel')}
                 </div>
                 {isWinner && !alreadyPaid && (
                   <div style={{ marginTop: 14, textAlign: 'center' }}>
-                    <p style={{ color: 'var(--jade)', fontWeight: 700, marginBottom: 10 }}>🎉 ยินดีด้วย คุณชนะการประมูลนี้!</p>
-                    <Link href={`/auction/${auction.id}/checkout`} className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>ไปชำระเงิน</Link>
+                    <p style={{ color: 'var(--jade)', fontWeight: 700, marginBottom: 10 }}>{t('auction.youWon')}</p>
+                    <Link href={`/auction/${auction.id}/checkout`} className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>{t('auction.goToPay')}</Link>
                   </div>
                 )}
                 {isWinner && alreadyPaid && (
-                  <p style={{ color: 'var(--jade)', fontWeight: 600, marginTop: 10, textAlign: 'center' }}>ชำระเงินแล้ว — ไปที่หน้า Tracking เพื่อติดตามสถานะ</p>
+                  <p style={{ color: 'var(--jade)', fontWeight: 600, marginTop: 10, textAlign: 'center' }}>{t('auction.alreadyPaid')}</p>
                 )}
               </div>
             )}
@@ -151,7 +153,7 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
 
           {bids.length > 0 && (
             <div className="card">
-              <h3 style={{ fontSize: 15, marginBottom: 10 }}>ประวัติการบิด ({bids.length})</h3>
+              <h3 style={{ fontSize: 15, marginBottom: 10 }}>{t('auction.bidHistory', { n: bids.length })}</h3>
               <div style={{ maxHeight: 200, overflowY: 'auto' }}>
                 {bids.map((b) => (
                   <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px dashed var(--line)', fontSize: 13 }}>
@@ -168,20 +170,21 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
   );
 }
 
-function AuctionCountdown({ endsAt }: { endsAt: string }) {
+function AuctionCountdown({ endsAt, t }: { endsAt: string; t: (key: string, vars?: any) => string }) {
   const [label, setLabel] = useState('');
   useEffect(() => {
     function tick() {
       const diff = new Date(endsAt).getTime() - Date.now();
-      if (diff <= 0) { setLabel('หมดเวลา'); return; }
+      if (diff <= 0) { setLabel(t('auction.timeUp')); return; }
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setLabel(h > 24 ? `เหลืออีก ${Math.floor(h / 24)} วัน` : `เหลือเวลา ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
+      const hms = h > 24 ? t('auction.timeLeftDays', { n: Math.floor(h / 24) }) : `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      setLabel(h > 24 ? hms : t('auction.timeLeftLabel', { hms }));
     }
     tick();
-    const t = setInterval(tick, 1000);
-    return () => clearInterval(t);
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
   }, [endsAt]);
   return <>{label}</>;
 }

@@ -23,6 +23,9 @@ export default function AdminAuctionsPage() {
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [bidHistory, setBidHistory] = useState<any[]>([]);
+  const [pickerProducts, setPickerProducts] = useState<any[]>([]);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [showPicker, setShowPicker] = useState(false);
 
   async function load() {
     const { data } = await supabase.from('auctions').select('*').order('created_at', { ascending: false });
@@ -33,6 +36,27 @@ export default function AdminAuctionsPage() {
     setBidCounts(counts);
   }
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    supabase.from('products').select('*').eq('is_giveaway', false).order('name', { ascending: true })
+      .then(({ data }) => setPickerProducts(data || []));
+  }, []);
+
+  function pickProduct(p: any) {
+    setDraft((d) => ({
+      ...d,
+      name: p.name,
+      description: p.description || '',
+      shippingFee: String(p.shipping_fee || ''),
+      images: p.images || [],
+    }));
+    setShowPicker(false);
+    setPickerQuery('');
+  }
+
+  const filteredPickerProducts = pickerQuery.trim()
+    ? pickerProducts.filter((p) => p.name.toLowerCase().includes(pickerQuery.trim().toLowerCase()))
+    : pickerProducts;
 
   async function uploadFiles(files: FileList) {
     setUploading(true);
@@ -128,6 +152,43 @@ export default function AdminAuctionsPage() {
     <div>
       <div className="card">
         <h3>{editingId ? 'แก้ไขรายการประมูล' : 'สร้างรายการประมูลใหม่'}</h3>
+
+        {!editingId && (
+          <div style={{ marginBottom: 16 }}>
+            <button type="button" className="btn btn-outline" onClick={() => setShowPicker((v) => !v)}>
+              {showPicker ? 'ซ่อนรายการสินค้า' : 'เลือกจากสินค้าที่มีอยู่'}
+            </button>
+            <p style={{ fontSize: 12, color: '#8a8378', marginTop: 6 }}>
+              เลือกสินค้าที่เคยลงขายไว้ ระบบจะดึงชื่อ/รายละเอียด/รูปภาพ/ค่าจัดส่งมาใส่ให้อัตโนมัติ (ไม่ดึงราคามาให้ ตั้งราคาเริ่มต้นประมูลเองได้เลย) — <b>สินค้าเดิมจะยังโชว์ขายอยู่ในร้านตามปกติ ไม่ได้ถูกซ่อน/ลบให้อัตโนมัติ</b> ถ้าไม่อยากให้ขายซ้ำกัน 2 ทาง ให้ไปกดปุ่ม "ซ่อน" ที่หน้ารายการสินค้าเองอีกที
+            </p>
+            {showPicker && (
+              <div style={{ border: '1.5px solid var(--line)', borderRadius: 9, padding: 10, marginTop: 10 }}>
+                <input
+                  value={pickerQuery}
+                  onChange={(e) => setPickerQuery(e.target.value)}
+                  placeholder="ค้นหาชื่อสินค้า..."
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--line)', fontSize: 13.5, marginBottom: 8 }}
+                />
+                <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                  {filteredPickerProducts.length === 0 ? (
+                    <p style={{ color: '#9a9490', fontSize: 13, margin: 4 }}>ไม่พบสินค้า</p>
+                  ) : filteredPickerProducts.map((p) => (
+                    <div key={p.id} onClick={() => pickProduct(p)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 4px', cursor: 'pointer', borderRadius: 6 }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--paper-dim)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <img src={p.thumbnail_url || p.images?.[0] || ''} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 6, background: 'var(--paper-dim)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 13.5, flex: 1 }}>{p.name}</span>
+                      <span style={{ fontSize: 12, color: '#8a8378' }}>฿{p.price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="field"><label>ชื่อรายการ</label>
           <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} /></div>
         <div className="field"><label>รายละเอียด</label>

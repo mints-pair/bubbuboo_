@@ -135,6 +135,16 @@ export default function AdminAuctionsPage() {
     load();
   }
 
+  async function deleteAuction(a: any) {
+    const warning = a.order_number
+      ? `ลบรายการประมูล "${a.name}" ถาวร? (ออเดอร์ ${a.order_number} ที่เกิดจากการประมูลนี้จะยังอยู่ในระบบตามปกติ ไม่ถูกลบไปด้วย) การกระทำนี้ย้อนกลับไม่ได้`
+      : `ลบรายการประมูล "${a.name}" ถาวร? ประวัติการบิดทั้งหมดจะถูกลบไปด้วย การกระทำนี้ย้อนกลับไม่ได้`;
+    if (!confirm(warning)) return;
+    await supabase.from('auctions').delete().eq('id', a.id);
+    logAdminAction(`ลบรายการประมูล "${a.name}"`);
+    load();
+  }
+
   async function toggleHistory(a: any) {
     if (expandedId === a.id) { setExpandedId(null); return; }
     setExpandedId(a.id);
@@ -264,6 +274,7 @@ export default function AdminAuctionsPage() {
                       <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 12, color: 'var(--rose)' }} onClick={() => cancelAuction(a)}>ยกเลิกรายการ</button>
                     </>
                   )}
+                  <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 12, color: 'var(--rose)', borderColor: 'var(--rose)' }} onClick={() => deleteAuction(a)}>ลบรายการ</button>
                 </div>
 
                 {expandedId === a.id && (

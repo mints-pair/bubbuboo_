@@ -17,8 +17,9 @@ export default function OutOfStockPage() {
   const [marketFilter, setMarketFilter] = useState('');
 
   async function load() {
-    const { data: p } = await supabase.from('products').select('*').lte('stock', 0).order('name', { ascending: true });
-    setProducts(p || []);
+    const { data: p } = await supabase.from('products').select('*').lte('stock', 0);
+    const sorted = (p || []).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    setProducts(sorted);
     const { data: c } = await supabase.from('categories').select('*');
     setCategories(c || []);
     setLoading(false);

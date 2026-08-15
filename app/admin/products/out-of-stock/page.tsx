@@ -11,6 +11,10 @@ export default function OutOfStockPage() {
   const [loading, setLoading] = useState(true);
   const [restockValues, setRestockValues] = useState<Record<string, string>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
+  const [memberFilter, setMemberFilter] = useState('');
+  const [eventFilter, setEventFilter] = useState('');
+  const [marketFilter, setMarketFilter] = useState('');
 
   async function load() {
     const { data: p } = await supabase.from('products').select('*').lte('stock', 0).order('name', { ascending: true });
@@ -25,8 +29,12 @@ export default function OutOfStockPage() {
     return categories.find((c) => c.id === id)?.name || '-';
   }
 
+  function memberIdsOf(p: any): string[] {
+    return (p.member_ids && p.member_ids.length > 0) ? p.member_ids : (p.member_id ? [p.member_id] : []);
+  }
+
   function namesOf(p: any) {
-    const ids = (p.member_ids && p.member_ids.length > 0) ? p.member_ids : (p.member_id ? [p.member_id] : []);
+    const ids = memberIdsOf(p);
     if (ids.length === 0) return '-';
     return ids.map((id: string) => categories.find((c) => c.id === id)?.name).filter(Boolean).join(', ') || '-';
   }
@@ -50,19 +58,63 @@ export default function OutOfStockPage() {
     load();
   }
 
+  const members = categories.filter((c) => c.type === 'member' && (!marketFilter || c.market === marketFilter));
+  const events = categories.filter((c) => c.type === 'event' && (!marketFilter || c.market === marketFilter));
+
+  let filtered = products;
+  if (memberFilter) filtered = filtered.filter((p) => memberIdsOf(p).includes(memberFilter));
+  if (eventFilter) filtered = filtered.filter((p) => p.event_id === eventFilter);
+  if (marketFilter) filtered = filtered.filter((p) => p.market === marketFilter);
+  if (query.trim()) {
+    const q = query.trim().toLowerCase();
+    filtered = filtered.filter((p) => (p.name + ' ' + (p.tags || []).join(' ')).toLowerCase().includes(q));
+  }
+
   return (
     <div>
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 4 }}>
-          <h3 style={{ margin: 0 }}>หมดสต็อค ({products.length})</h3>
+          <h3 style={{ margin: 0 }}>หมดสต็อค ({filtered.length}{filtered.length !== products.length ? ` / ${products.length}` : ''})</h3>
           <Link href="/admin/products/list" className="btn btn-outline" style={{ textDecoration: 'none' }}>← กลับไปรายการสินค้า</Link>
         </div>
         <p style={{ color: '#8a8378', fontSize: 12.5, marginTop: 4, marginBottom: 14 }}>
           สินค้าที่สต็อกเป็น 0 จะย้ายมาอยู่ที่นี่อัตโนมัติ และไม่แสดงในหน้าร้าน — ใส่จำนวนที่เติมแล้วกด "เติมสต็อค" เพื่อให้กลับไปขายได้ตามปกติ
         </p>
 
-        {loading ? null : products.length === 0 ? (
-          <p style={{ color: '#9a9490' }}>ไม่มีสินค้าที่หมดสต็อกตอนนี้ 🎉</p>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', margin: '14px 0' }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ค้นหาชื่อสินค้า หรือแท็ก..."
+            style={{ flex: 1, minWidth: 200, padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+          />
+          <select value={marketFilter} onChange={(e) => { setMarketFilter(e.target.value); setMemberFilter(''); setEventFilter(''); }}
+            style={{ padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14, background: '#fff' }}>
+            <option value="">ทุกตลาด</option>
+            <option value="gmmtv">#ตลาดนัดGMMTV</option>
+            <option value="dmd">#ตลาดนัดDMD</option>
+          </select>
+          {members.length > 0 && (
+            <select value={memberFilter} onChange={(e) => setMemberFilter(e.target.value)}
+              style={{ padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14, background: '#fff' }}>
+              <option value="">ทุกเมมเบอร์</option>
+              {members.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+          {events.length > 0 && (
+            <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}
+              style={{ padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14, background: '#fff' }}>
+              <option value="">ทุกอีเว้นท์</option>
+              {events.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          )}
+          {(query || memberFilter || eventFilter || marketFilter) && (
+            <button className="btn btn-outline" onClick={() => { setQuery(''); setMemberFilter(''); setEventFilter(''); setMarketFilter(''); }}>ล้างตัวกรอง</button>
+          )}
+        </div>
+
+        {loading ? null : filtered.length === 0 ? (
+          <p style={{ color: '#9a9490' }}>{products.length === 0 ? 'ไม่มีสินค้าที่หมดสต็อกตอนนี้ 🎉' : 'ไม่พบสินค้าตามตัวกรองนี้'}</p>
         ) : (
           <div className="table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
@@ -70,7 +122,7 @@ export default function OutOfStockPage() {
                 <th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>เติมสต็อค</th><th></th>
               </tr></thead>
               <tbody>
-                {products.map((p) => (
+                {filtered.map((p) => (
                   <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
                     <td><img src={p.thumbnail_url || p.images?.[0] || ''} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /></td>
                     <td>{p.name}{p.is_giveaway && (

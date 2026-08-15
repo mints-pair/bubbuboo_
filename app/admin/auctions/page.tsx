@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 import { compressImageFile, compressImage } from '@/lib/imageCompress';
@@ -23,6 +23,7 @@ export default function AdminAuctionsPage() {
   const [saving, setSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [bidHistory, setBidHistory] = useState<any[]>([]);
+  const formRef = useRef<HTMLDivElement>(null);
   const [pickerProducts, setPickerProducts] = useState<any[]>([]);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showPicker, setShowPicker] = useState(false);
@@ -124,6 +125,7 @@ export default function AdminAuctionsPage() {
       minIncrement: String(a.min_increment), shippingFee: String(a.shipping_fee),
       endsAt: toLocalInputValue(a.ends_at), images: a.images || [],
     });
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function cancelAuction(a: any) {
@@ -150,7 +152,7 @@ export default function AdminAuctionsPage() {
 
   return (
     <div>
-      <div className="card">
+      <div className="card" ref={formRef}>
         <h3>{editingId ? 'แก้ไขรายการประมูล' : 'สร้างรายการประมูลใหม่'}</h3>
 
         {!editingId && (

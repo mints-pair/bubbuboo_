@@ -46,6 +46,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const TABS = [
     { href: '/admin/products', label: 'เพิ่มสินค้า' },
     { href: '/admin/products/list', label: 'รายการสินค้า' },
+    { href: '/admin/auctions', label: 'ประมูล' },
     { href: '/admin/orders/pending', label: `คำสั่งซื้อรอการคอนเฟิร์ม${pendingCount ? ` (${pendingCount})` : ''}` },
     { href: '/admin/orders/ship', label: `คำสั่งซื้อรอการส่ง${shipCount ? ` (${shipCount})` : ''}` },
     { href: '/admin/orders/history', label: 'ประวัติการขายทั้งหมด' },

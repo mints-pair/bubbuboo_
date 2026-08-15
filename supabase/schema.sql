@@ -308,3 +308,55 @@ create policy "public read special areas" on special_shipping_areas
 
 create policy "admin manage special areas" on special_shipping_areas
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ============================================================
+-- AUCTIONS (English/open auction — everyone sees the current highest bid)
+-- Ending is NOT driven by a cron job — "ended" is simply derived from
+-- ends_at < now() wherever it's checked (bid API, storefront display).
+-- When the winner pays, a real row gets inserted into `orders` and the
+-- rest of the existing pipeline (confirm/ship/tracking/Telegram) just
+-- works on it like any other order.
+-- ============================================================
+create table if not exists auctions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text default '',
+  images text[] not null default '{}',
+  thumbnail_url text,
+  starting_price numeric not null default 0,
+  min_increment numeric not null default 10,
+  shipping_fee numeric not null default 0,
+  current_bid numeric,
+  current_bidder_name text,
+  current_bidder_contact text,
+  current_bidder_session_id text,
+  ends_at timestamptz not null,
+  status text not null default 'active', -- 'active' | 'cancelled' | 'completed' (completed = winner paid, order created)
+  order_number text references orders(order_number),
+  created_at timestamptz not null default now()
+);
+alter table auctions enable row level security;
+
+create policy "public read auctions" on auctions
+  for select using (true);
+
+create policy "admin manage auctions" on auctions
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create table if not exists auction_bids (
+  id uuid primary key default gen_random_uuid(),
+  auction_id uuid not null references auctions(id) on delete cascade,
+  bidder_name text not null,
+  bidder_contact text not null,
+  bidder_session_id text not null,
+  amount numeric not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists auction_bids_auction_idx on auction_bids(auction_id);
+alter table auction_bids enable row level security;
+
+create policy "public read bids" on auction_bids
+  for select using (true);
+
+create policy "admin manage bids" on auction_bids
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

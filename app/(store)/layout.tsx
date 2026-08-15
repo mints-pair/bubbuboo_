@@ -100,6 +100,10 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
             background: pathname === '/giveaway' ? 'var(--plum)' : 'transparent',
             color: pathname === '/giveaway' ? '#fff' : 'var(--ink)',
           }}>{t('nav.giveaway')}</Link>
+          <Link href="/auction" className="store-sidebar-link" style={{
+            background: pathname.startsWith('/auction') ? 'var(--plum)' : 'transparent',
+            color: pathname.startsWith('/auction') ? '#fff' : 'var(--ink)',
+          }}>ประมูล</Link>
         </nav>
         <main className="store-main">{children}</main>
       </div>

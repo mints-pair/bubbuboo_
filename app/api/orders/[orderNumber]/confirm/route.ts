@@ -21,6 +21,7 @@ export async function POST(_req: Request, { params }: { params: { orderNumber: s
   // (best-effort; for high-concurrency stores, move this into a single SQL
   //  function using row locks instead)
   for (const item of order.items) {
+    if (!item.productId) continue; // e.g. an auction item — nothing to deduct
     const { data: p } = await supabase.from('products').select('stock').eq('id', item.productId).single();
     if (p) {
       await supabase.from('products').update({ stock: Math.max(0, p.stock - item.qty) }).eq('id', item.productId);

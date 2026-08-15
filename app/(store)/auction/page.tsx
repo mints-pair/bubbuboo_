@@ -60,7 +60,21 @@ export default function AuctionListPage() {
     const { data: bids } = await supabase.from('auction_bids').select('auction_id');
     const counts: Record<string, number> = {};
     (bids || []).forEach((b: any) => { counts[b.auction_id] = (counts[b.auction_id] || 0) + 1; });
-    setAuctions(list.map((a) => ({ ...a, bidCount: counts[a.id] || 0 })));
+    const withCounts = list.map((a) => ({ ...a, bidCount: counts[a.id] || 0 }));
+
+    // hide from the public list once fully wrapped up:
+    // - already paid (nothing left to do here)
+    // - ended with zero bids (nothing interesting to show)
+    // Still SHOWN: ended-with-a-winner-but-unpaid, so the winner can find
+    // their way back to the payment link.
+    const visible = withCounts.filter((a) => {
+      if (a.status === 'completed') return false;
+      const isEnded = new Date(a.ends_at).getTime() <= Date.now();
+      if (isEnded && !a.current_bid) return false;
+      return true;
+    });
+
+    setAuctions(visible);
     setLoading(false);
   }
 

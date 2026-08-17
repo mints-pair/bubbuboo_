@@ -44,6 +44,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   if (pathname === '/admin/login') return <>{children}</>;
 
   const TABS = [
+    { href: '/admin/dashboard', label: 'ภาพรวม' },
     { href: '/admin/products', label: 'เพิ่มสินค้า' },
     { href: '/admin/products/list', label: 'รายการสินค้า' },
     { href: '/admin/auctions', label: 'ประมูล' },

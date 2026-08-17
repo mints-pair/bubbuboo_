@@ -224,6 +224,7 @@ export default function AdminProductsListPage() {
                 หมดสต็อค ({outOfStockCount})
               </Link>
             )}
+            <Link href="/admin/products/import" className="btn btn-outline" style={{ textDecoration: 'none' }}>นำเข้าจาก Excel</Link>
             <Link href="/admin/products" className="btn btn-primary" style={{ textDecoration: 'none' }}>+ เพิ่มสินค้าใหม่</Link>
           </div>
         </div>

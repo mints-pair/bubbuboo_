@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
 import { compressImageFile, compressImage } from '@/lib/imageCompress';
 
-const emptyDraft = { name: '', description: '', startingPrice: '', minIncrement: '10', shippingFee: '', endsAt: '', images: [] as string[] };
+const emptyDraft = { name: '', description: '', startingPrice: '', minIncrement: '10', shippingFee: '', endsAt: '', images: [] as string[], eventId: '' };
 
 function toLocalInputValue(iso: string | null) {
   if (!iso) return '';
@@ -27,6 +27,12 @@ export default function AdminAuctionsPage() {
   const [pickerProducts, setPickerProducts] = useState<any[]>([]);
   const [pickerQuery, setPickerQuery] = useState('');
   const [showPicker, setShowPicker] = useState(false);
+  const [eventOptions, setEventOptions] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('categories').select('*').eq('type', 'event').order('name', { ascending: true })
+      .then(({ data }) => setEventOptions(data || []));
+  }, []);
 
   async function load() {
     const { data } = await supabase.from('auctions').select('*').order('created_at', { ascending: false });
@@ -50,6 +56,7 @@ export default function AdminAuctionsPage() {
       description: p.description || '',
       shippingFee: String(p.shipping_fee || ''),
       images: p.images || [],
+      eventId: p.event_id || '',
     }));
     setShowPicker(false);
     setPickerQuery('');
@@ -102,6 +109,7 @@ export default function AdminAuctionsPage() {
       shipping_fee: Number(draft.shippingFee) || 0,
       ends_at: new Date(draft.endsAt).toISOString(),
       images: draft.images,
+      event_id: draft.eventId || null,
     };
     if (thumbnailUrl) payload.thumbnail_url = thumbnailUrl;
 
@@ -123,7 +131,7 @@ export default function AdminAuctionsPage() {
     setDraft({
       name: a.name, description: a.description || '', startingPrice: String(a.starting_price),
       minIncrement: String(a.min_increment), shippingFee: String(a.shipping_fee),
-      endsAt: toLocalInputValue(a.ends_at), images: a.images || [],
+      endsAt: toLocalInputValue(a.ends_at), images: a.images || [], eventId: a.event_id || '',
     });
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -213,6 +221,19 @@ export default function AdminAuctionsPage() {
           <div className="field" style={{ flex: 1 }}><label>ค่าจัดส่ง (บาท)</label>
             <input type="number" value={draft.shippingFee} onChange={(e) => setDraft({ ...draft, shippingFee: e.target.value })} /></div>
         </div>
+        <div className="field">
+          <label>อีเว้นท์ (ไม่บังคับ — ใช้สำหรับแยกยอดขายตามอีเว้นท์ในหน้าภาพรวม)</label>
+          <select
+            value={draft.eventId}
+            onChange={(e) => setDraft({ ...draft, eventId: e.target.value })}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 9, border: '1.5px solid var(--line)', fontSize: 14 }}
+          >
+            <option value="">ไม่มีอีเว้นท์</option>
+            {eventOptions.map((c) => (
+              <option key={c.id} value={c.id}>{c.name} ({c.market === 'dmd' ? '#DMD' : '#GMMTV'})</option>
+            ))}
+          </select>
+        </div>
         <div className="field"><label>วัน-เวลาปิดประมูล</label>
           <input type="datetime-local" value={draft.endsAt} onChange={(e) => setDraft({ ...draft, endsAt: e.target.value })} /></div>
         <div className="field">
@@ -252,6 +273,7 @@ export default function AdminAuctionsPage() {
                     <div style={{ fontSize: 12.5, color: '#8a8378' }}>
                       {a.current_bid ? `฿${Number(a.current_bid).toLocaleString('th-TH')}` : `เริ่มต้น ฿${Number(a.starting_price).toLocaleString('th-TH')}`}
                       {' · '}{bidCounts[a.id] || 0} บิด{' · '}ปิด {new Date(a.ends_at).toLocaleString('th-TH')}
+                      {a.event_id && <>{' · '}{eventOptions.find((c) => c.id === a.event_id)?.name || 'อีเว้นท์'}</>}
                     </div>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 99, background: s.bg, color: s.color, whiteSpace: 'nowrap' }}>{s.text}</span>

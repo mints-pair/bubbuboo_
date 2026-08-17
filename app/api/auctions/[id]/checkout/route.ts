@@ -40,7 +40,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const { error: insErr } = await supabase.from('orders').insert({
     order_number: orderNumber,
     status: 'pending',
-    items: [{ productId: null, name: `[ประมูล] ${auction.name}`, qty: 1, price: subtotal, image: auction.images?.[0] || '' }],
+    items: [{ productId: null, auctionId: auction.id, name: `[ประมูล] ${auction.name}`, qty: 1, price: subtotal, image: auction.images?.[0] || '' }],
     subtotal, shipping_fee: shippingFee, total,
     contact, tracking_code: trackingCode, slip_image: slipImage,
     payment_method: validMethod, payment_surcharge: paymentSurcharge, shipping_area: 'normal',

@@ -21,8 +21,8 @@ export async function POST(req: Request, { params }: { params: { orderNumber: st
     await supabase.from('orders').update({ status: 'shipping' }).eq('order_number', params.orderNumber);
     logMessage = `ย้อนสถานะออเดอร์ ${params.orderNumber} กลับเป็นกำลังจัดส่ง`;
   } else if (action === 'edit-shipping') {
-    const { trackingNumber, carrier, date } = body;
-    await supabase.from('orders').update({ shipping: { trackingNumber, carrier, date } }).eq('order_number', params.orderNumber);
+    const { trackingNumber, carrier, date, trackingUrl } = body;
+    await supabase.from('orders').update({ shipping: { trackingNumber, carrier, date, trackingUrl: trackingUrl || null } }).eq('order_number', params.orderNumber);
     logMessage = `แก้ไขข้อมูลจัดส่งออเดอร์ ${params.orderNumber}`;
   } else if (action === 'delete') {
     await supabase.from('orders').delete().eq('order_number', params.orderNumber);

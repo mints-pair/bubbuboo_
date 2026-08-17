@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function PendingShipPage() {
   const supabase = createClient();
   const [orders, setOrders] = useState<any[]>([]);
-  const [forms, setForms] = useState<Record<string, { trackingNumber: string; carrier: string; date: string }>>({});
+  const [forms, setForms] = useState<Record<string, { trackingNumber: string; carrier: string; date: string; trackingUrl: string }>>({});
 
   async function load() {
     const { data } = await supabase.from('orders').select('*').eq('status', 'confirmed').order('created_at', { ascending: true });
@@ -14,7 +14,7 @@ export default function PendingShipPage() {
   useEffect(() => { load(); }, []);
 
   function formFor(orderNumber: string) {
-    return forms[orderNumber] || { trackingNumber: '', carrier: '', date: new Date().toISOString().slice(0, 10) };
+    return forms[orderNumber] || { trackingNumber: '', carrier: '', date: new Date().toISOString().slice(0, 10), trackingUrl: '' };
   }
 
   async function saveShipping(orderNumber: string) {
@@ -78,6 +78,15 @@ export default function PendingShipPage() {
                 <input value={f.carrier} onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, carrier: e.target.value } })} /></div>
               <div className="field" style={{ flex: 1 }}><label>วันที่จัดส่ง</label>
                 <input type="date" value={f.date} onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, date: e.target.value } })} /></div>
+            </div>
+            <div className="field">
+              <label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
+              <input
+                value={f.trackingUrl}
+                onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, trackingUrl: e.target.value } })}
+                placeholder="วางลิงก์จากเว็บขนส่งที่กรอกเลขพัสดุไว้แล้ว เช่น https://..."
+              />
+              <p style={{ fontSize: 12, color: '#8a8378', marginTop: 4 }}>ถ้าใส่ไว้ ลูกค้าจะเห็นปุ่มกดตรงไปหน้านั้นได้เลยที่หน้า Tracking</p>
             </div>
             <button className="btn btn-primary" onClick={() => saveShipping(o.order_number)}>บันทึก &amp; เปลี่ยนสถานะเป็นกำลังจัดส่ง</button>
           </div>

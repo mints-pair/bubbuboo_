@@ -7,13 +7,13 @@ export async function POST(req: Request, { params }: { params: { orderNumber: st
   const { data: { user } } = await authed.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
 
-  const { trackingNumber, carrier, date } = await req.json();
+  const { trackingNumber, carrier, date, trackingUrl } = await req.json();
   if (!trackingNumber || !carrier) return NextResponse.json({ error: 'กรอกข้อมูลให้ครบ' }, { status: 400 });
 
   const supabase = createAdminSupabase();
   await supabase.from('orders').update({
     status: 'shipping',
-    shipping: { trackingNumber, carrier, date },
+    shipping: { trackingNumber, carrier, date, trackingUrl: trackingUrl || null },
   }).eq('order_number', params.orderNumber);
 
   await supabase.from('admin_logs').insert({

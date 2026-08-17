@@ -10,7 +10,7 @@ export default function HistoryPage() {
   const [unlockTarget, setUnlockTarget] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
-  const [edits, setEdits] = useState<Record<string, { trackingNumber: string; carrier: string; date: string }>>({});
+  const [edits, setEdits] = useState<Record<string, { trackingNumber: string; carrier: string; date: string; trackingUrl: string }>>({});
   const [query, setQuery] = useState('');
 
   async function load() {
@@ -22,6 +22,7 @@ export default function HistoryPage() {
   function editFor(o: any) {
     return edits[o.order_number] || {
       trackingNumber: o.shipping?.trackingNumber || '', carrier: o.shipping?.carrier || '', date: o.shipping?.date || '',
+      trackingUrl: o.shipping?.trackingUrl || '',
     };
   }
 
@@ -115,6 +116,9 @@ export default function HistoryPage() {
               <>
                 <div style={{ color: '#8a8378', marginBottom: 10 }}>
                   เลขพัสดุ {o.shipping?.trackingNumber || '-'} · {o.shipping?.carrier || '-'} · {o.shipping?.date || '-'}
+                  {o.shipping?.trackingUrl && (
+                    <> · <a href={o.shipping.trackingUrl} target="_blank" rel="noopener" style={{ color: 'var(--jade)' }}>ลิงก์ติดตามพัสดุ</a></>
+                  )}
                 </div>
                 <p style={{ color: '#8a8378' }}>ออเดอร์นี้ได้รับสินค้าแล้ว และถูกล็อคไม่ให้แก้ไข ต้องใส่รหัสผ่านเพื่อปลดล็อค</p>
                 <button className="btn btn-outline" onClick={() => setUnlockTarget(o.order_number)}>ใส่รหัสเพื่อแก้ไข</button>
@@ -129,6 +133,8 @@ export default function HistoryPage() {
                   <div className="field" style={{ flex: 1 }}><label>วันที่จัดส่ง</label>
                     <input type="date" value={f.date} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, date: e.target.value } })} /></div>
                 </div>
+                <div className="field"><label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
+                  <input value={f.trackingUrl} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, trackingUrl: e.target.value } })} placeholder="https://..." /></div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {o.status === 'shipping' ? (
                     <>

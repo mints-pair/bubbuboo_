@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { isThailandPost } from '@/lib/courierLinks';
 
 export default function PendingShipPage() {
   const supabase = createClient();
@@ -79,15 +80,21 @@ export default function PendingShipPage() {
               <div className="field" style={{ flex: 1 }}><label>วันที่จัดส่ง</label>
                 <input type="date" value={f.date} onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, date: e.target.value } })} /></div>
             </div>
-            <div className="field">
-              <label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
-              <input
-                value={f.trackingUrl}
-                onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, trackingUrl: e.target.value } })}
-                placeholder="วางลิงก์จากเว็บขนส่งที่กรอกเลขพัสดุไว้แล้ว เช่น https://..."
-              />
-              <p style={{ fontSize: 12, color: '#8a8378', marginTop: 4 }}>ถ้าใส่ไว้ ลูกค้าจะเห็นปุ่มกดตรงไปหน้านั้นได้เลยที่หน้า Tracking</p>
-            </div>
+            {isThailandPost(f.carrier) ? (
+              <p style={{ fontSize: 12.5, color: 'var(--jade)', marginTop: -8, marginBottom: 14 }}>
+                ✓ ระบบจะสร้างลิงก์ติดตามพัสดุของไปรษณีย์ไทยให้อัตโนมัติ ไม่ต้องแนบลิงก์เอง
+              </p>
+            ) : (
+              <div className="field">
+                <label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
+                <input
+                  value={f.trackingUrl}
+                  onChange={(e) => setForms({ ...forms, [o.order_number]: { ...f, trackingUrl: e.target.value } })}
+                  placeholder="วางลิงก์จากเว็บขนส่งที่กรอกเลขพัสดุไว้แล้ว เช่น https://..."
+                />
+                <p style={{ fontSize: 12, color: '#8a8378', marginTop: 4 }}>ถ้าใส่ไว้ ลูกค้าจะเห็นปุ่มกดตรงไปหน้านั้นได้เลยที่หน้า Tracking</p>
+              </div>
+            )}
             <button className="btn btn-primary" onClick={() => saveShipping(o.order_number)}>บันทึก &amp; เปลี่ยนสถานะเป็นกำลังจัดส่ง</button>
           </div>
         );

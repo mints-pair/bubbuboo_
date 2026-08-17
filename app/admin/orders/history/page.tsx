@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { logAdminAction } from '@/lib/adminLog';
+import { isThailandPost, getCourierTrackingUrl } from '@/lib/courierLinks';
 
 export default function HistoryPage() {
   const supabase = createClient();
@@ -116,9 +117,10 @@ export default function HistoryPage() {
               <>
                 <div style={{ color: '#8a8378', marginBottom: 10 }}>
                   เลขพัสดุ {o.shipping?.trackingNumber || '-'} · {o.shipping?.carrier || '-'} · {o.shipping?.date || '-'}
-                  {o.shipping?.trackingUrl && (
-                    <> · <a href={o.shipping.trackingUrl} target="_blank" rel="noopener" style={{ color: 'var(--jade)' }}>ลิงก์ติดตามพัสดุ</a></>
-                  )}
+                  {(() => {
+                    const url = getCourierTrackingUrl(o.shipping?.carrier, o.shipping?.trackingNumber, o.shipping?.trackingUrl);
+                    return url ? <> · <a href={url} target="_blank" rel="noopener" style={{ color: 'var(--jade)' }}>ลิงก์ติดตามพัสดุ</a></> : null;
+                  })()}
                 </div>
                 <p style={{ color: '#8a8378' }}>ออเดอร์นี้ได้รับสินค้าแล้ว และถูกล็อคไม่ให้แก้ไข ต้องใส่รหัสผ่านเพื่อปลดล็อค</p>
                 <button className="btn btn-outline" onClick={() => setUnlockTarget(o.order_number)}>ใส่รหัสเพื่อแก้ไข</button>
@@ -133,8 +135,14 @@ export default function HistoryPage() {
                   <div className="field" style={{ flex: 1 }}><label>วันที่จัดส่ง</label>
                     <input type="date" value={f.date} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, date: e.target.value } })} /></div>
                 </div>
-                <div className="field"><label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
-                  <input value={f.trackingUrl} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, trackingUrl: e.target.value } })} placeholder="https://..." /></div>
+                {isThailandPost(f.carrier) ? (
+                  <p style={{ fontSize: 12.5, color: 'var(--jade)', marginBottom: 14 }}>
+                    ✓ ระบบจะสร้างลิงก์ติดตามพัสดุของไปรษณีย์ไทยให้อัตโนมัติ ไม่ต้องแนบลิงก์เอง
+                  </p>
+                ) : (
+                  <div className="field"><label>ลิงก์ติดตามพัสดุ (ไม่บังคับ)</label>
+                    <input value={f.trackingUrl} onChange={(e) => setEdits({ ...edits, [o.order_number]: { ...f, trackingUrl: e.target.value } })} placeholder="https://..." /></div>
+                )}
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {o.status === 'shipping' ? (
                     <>

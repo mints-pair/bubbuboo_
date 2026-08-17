@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLang } from '@/lib/lang-context';
+import { getCourierTrackingUrl } from '@/lib/courierLinks';
 
 export default function TrackingContent() {
   const params = useSearchParams();
@@ -77,17 +78,20 @@ export default function TrackingContent() {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.carrierLabel')}</span><span>{order.shipping.carrier}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.trackingNumberLabel')}</span><span>{order.shipping.trackingNumber}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.dateLabel')}</span><span>{order.shipping.date}</span></div>
-              {order.shipping.trackingUrl && (
-                <a
-                  href={order.shipping.trackingUrl}
-                  target="_blank"
-                  rel="noopener"
-                  className="btn btn-outline"
-                  style={{ display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 12 }}
-                >
-                  {t('tracking.trackOnCourierSite')}
-                </a>
-              )}
+              {(() => {
+                const url = getCourierTrackingUrl(order.shipping.carrier, order.shipping.trackingNumber, order.shipping.trackingUrl);
+                return url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener"
+                    className="btn btn-outline"
+                    style={{ display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 12 }}
+                  >
+                    {t('tracking.trackOnCourierSite')}
+                  </a>
+                ) : null;
+              })()}
             </>
           )}
         </div>

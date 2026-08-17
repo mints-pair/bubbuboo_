@@ -77,6 +77,17 @@ export default function TrackingContent() {
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.carrierLabel')}</span><span>{order.shipping.carrier}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.trackingNumberLabel')}</span><span>{order.shipping.trackingNumber}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{t('tracking.dateLabel')}</span><span>{order.shipping.date}</span></div>
+              {order.shipping.trackingNumber && (
+                <a
+                  href={`https://t.17track.net/en#nums=${encodeURIComponent(order.shipping.trackingNumber)}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="btn btn-outline"
+                  style={{ display: 'block', textAlign: 'center', textDecoration: 'none', marginTop: 12 }}
+                >
+                  {t('tracking.trackOnCourierSite')}
+                </a>
+              )}
             </>
           )}
         </div>

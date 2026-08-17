@@ -11,6 +11,7 @@ export default function HistoryPage() {
   const [password, setPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
   const [edits, setEdits] = useState<Record<string, { trackingNumber: string; carrier: string; date: string }>>({});
+  const [query, setQuery] = useState('');
 
   async function load() {
     const { data } = await supabase.from('orders').select('*').in('status', ['shipping', 'received']).order('created_at', { ascending: false });
@@ -73,9 +74,31 @@ export default function HistoryPage() {
 
   if (orders.length === 0) return <p>ยังไม่มีออเดอร์ที่เข้าสู่ขั้นตอนจัดส่ง</p>;
 
+  const filtered = query.trim()
+    ? orders.filter((o) => {
+        const q = query.trim().toLowerCase();
+        return (
+          o.order_number.toLowerCase().includes(q) ||
+          (o.contact?.name || '').toLowerCase().includes(q) ||
+          (o.contact?.phone || '').toLowerCase().includes(q) ||
+          (o.contact?.address || '').toLowerCase().includes(q) ||
+          (o.contact?.xAccount || '').toLowerCase().includes(q) ||
+          (o.tracking_code || '').toLowerCase().includes(q) ||
+          (o.shipping?.trackingNumber || '').toLowerCase().includes(q)
+        );
+      })
+    : orders;
+
   return (
     <div>
-      {orders.map((o) => {
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="ค้นหาชื่อ, เบอร์โทร, ที่อยู่, เลขออเดอร์, รหัสติดตาม, เลขพัสดุ..."
+        style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1.5px solid var(--line)', fontSize: 14, marginBottom: 16 }}
+      />
+      {filtered.length === 0 && <p style={{ color: '#9a9490' }}>ไม่พบออเดอร์ตามที่ค้นหา</p>}
+      {filtered.map((o) => {
         const locked = o.status === 'received' && !unlocked[o.order_number];
         const f = editFor(o);
         return (
@@ -85,6 +108,7 @@ export default function HistoryPage() {
               <span>{o.status === 'received' ? 'ได้รับสินค้าแล้ว' : 'กำลังจัดส่ง'} {locked ? '· ล็อคแล้ว' : ''}</span>
             </div>
             <div style={{ color: '#8a8378', marginBottom: 8 }}>ส่งถึง: {o.contact.name} — {o.contact.address} · {o.contact.phone}</div>
+            <div style={{ color: '#8a8378', marginBottom: 8 }}>รหัสติดตามที่ลูกค้าตั้ง: <b style={{ color: 'var(--ink)' }}>{o.tracking_code || '-'}</b></div>
             <div style={{ marginBottom: 10 }}>ยอดรวม: ฿{Number(o.total).toLocaleString('th-TH')}</div>
 
             {locked ? (

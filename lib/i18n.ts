@@ -113,6 +113,7 @@ export const translations: Record<Lang, any> = {
       cancelled: 'ออเดอร์ถูกยกเลิก',
       cancelledNote: 'ออเดอร์นี้ถูกปฏิเสธโดยแอดมิน หากมีข้อสงสัยสามารถติดต่อร้านได้',
       cancelReasonLabel: 'สาเหตุ',
+      trackOnCourierSite: 'ตรวจสอบสถานะพัสดุจากเว็บขนส่ง →',
     },
     giveaway: {
       heading: 'ของแจก',
@@ -309,6 +310,7 @@ export const translations: Record<Lang, any> = {
       cancelled: 'Order cancelled',
       cancelledNote: 'This order was declined by the admin. Contact the shop if you have questions.',
       cancelReasonLabel: 'Reason',
+      trackOnCourierSite: 'Track this parcel on the courier site →',
     },
     giveaway: {
       heading: 'Giveaway',

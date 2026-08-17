@@ -18,7 +18,15 @@ export default function OutOfStockPage() {
 
   async function load() {
     const { data: p } = await supabase.from('products').select('*').lte('stock', 0);
-    const sorted = (p || []).sort((a, b) => a.name.localeCompare(b.name, 'th'));
+    const sorted = (p || []).sort((a, b) => {
+      // most-recently-depleted first; products without a recorded date
+      // (e.g. from before this feature existed) fall to the bottom, sorted
+      // alphabetically among themselves
+      if (!a.stock_depleted_at && !b.stock_depleted_at) return a.name.localeCompare(b.name, 'th');
+      if (!a.stock_depleted_at) return 1;
+      if (!b.stock_depleted_at) return -1;
+      return new Date(b.stock_depleted_at).getTime() - new Date(a.stock_depleted_at).getTime();
+    });
     setProducts(sorted);
     const { data: c } = await supabase.from('categories').select('*');
     setCategories(c || []);
@@ -44,7 +52,7 @@ export default function OutOfStockPage() {
     const qty = Number(restockValues[p.id]);
     if (!qty || qty <= 0) { alert('กรุณาใส่จำนวนที่ถูกต้อง (มากกว่า 0)'); return; }
     setSavingId(p.id);
-    await supabase.from('products').update({ stock: qty }).eq('id', p.id);
+    await supabase.from('products').update({ stock: qty, stock_depleted_at: null }).eq('id', p.id);
     logAdminAction(`เติมสต็อคสินค้า "${p.name}" เป็น ${qty} ชิ้น`);
     setSavingId(null);
     setRestockValues((v) => { const n = { ...v }; delete n[p.id]; return n; });
@@ -120,7 +128,7 @@ export default function OutOfStockPage() {
           <div className="table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
               <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
-                <th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>เติมสต็อค</th><th></th>
+                <th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>หมดสต็อคเมื่อ</th><th>เติมสต็อค</th><th></th>
               </tr></thead>
               <tbody>
                 {filtered.map((p) => (
@@ -135,6 +143,9 @@ export default function OutOfStockPage() {
                     <td>{namesOf(p)}</td>
                     <td>{nameOf(p.event_id)}</td>
                     <td>{p.is_giveaway ? 'ฟรี' : `฿${p.price}`}</td>
+                    <td style={{ fontSize: 12.5, color: '#8a8378' }}>
+                      {p.stock_depleted_at ? new Date(p.stock_depleted_at).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                    </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <input

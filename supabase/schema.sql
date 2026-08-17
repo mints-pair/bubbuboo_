@@ -243,6 +243,7 @@ alter table products add column if not exists is_featured boolean not null defau
 alter table products add column if not exists market text not null default 'gmmtv' check (market in ('gmmtv', 'dmd'));
 alter table products add column if not exists is_hidden boolean not null default false;
 alter table products add column if not exists thumbnail_url text;
+alter table products add column if not exists stock_depleted_at timestamptz;
 
 -- ============================================================
 -- CART RESERVATIONS (10-minute hold, starts when a customer reaches the

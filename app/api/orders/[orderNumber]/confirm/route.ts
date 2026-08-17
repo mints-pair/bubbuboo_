@@ -24,7 +24,11 @@ export async function POST(_req: Request, { params }: { params: { orderNumber: s
     if (!item.productId) continue; // e.g. an auction item — nothing to deduct
     const { data: p } = await supabase.from('products').select('stock').eq('id', item.productId).single();
     if (p) {
-      await supabase.from('products').update({ stock: Math.max(0, p.stock - item.qty) }).eq('id', item.productId);
+      const newStock = Math.max(0, p.stock - item.qty);
+      await supabase.from('products').update({
+        stock: newStock,
+        stock_depleted_at: newStock <= 0 ? new Date().toISOString() : null,
+      }).eq('id', item.productId);
     }
   }
 

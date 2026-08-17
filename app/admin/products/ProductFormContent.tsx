@@ -16,6 +16,8 @@ export default function ProductFormContent() {
   const [newEventName, setNewEventName] = useState({ gmmtv: '', dmd: '' });
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [originalStock, setOriginalStock] = useState<number | null>(null);
+  const [originalDepletedAt, setOriginalDepletedAt] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
@@ -98,12 +100,23 @@ export default function ProductFormContent() {
       }
     }
 
+    const newStock = Number(draft.stock) || 0;
+    let stockDepletedAt: string | null;
+    if (newStock > 0) {
+      stockDepletedAt = null; // back in stock — clear it
+    } else if (editingId && originalStock !== null && originalStock <= 0) {
+      stockDepletedAt = originalDepletedAt; // already was 0 — keep the original date
+    } else {
+      stockDepletedAt = new Date().toISOString(); // just became 0 (or a brand-new product created at 0)
+    }
+
     const payload: any = {
       name: draft.name,
       description: draft.description,
       price: draft.isGiveaway ? 0 : Number(draft.price) || 0,
       shipping_fee: Number(draft.shippingFee) || 0,
-      stock: Number(draft.stock) || 0,
+      stock: newStock,
+      stock_depleted_at: stockDepletedAt,
       tags: draft.tags.split(',').map((t) => t.trim()).filter(Boolean),
       images: draft.images,
       member_id: draft.memberIds[0] || null,
@@ -124,6 +137,8 @@ export default function ProductFormContent() {
     }
     setDraft(emptyDraft);
     setEditingId(null);
+    setOriginalStock(null);
+    setOriginalDepletedAt(null);
     setSaving(false);
     // came here to edit one specific item from the list page -> go back to it
     if (wasEditing) router.push('/admin/products/list');
@@ -131,6 +146,8 @@ export default function ProductFormContent() {
 
   function startEdit(p: any) {
     setEditingId(p.id);
+    setOriginalStock(p.stock);
+    setOriginalDepletedAt(p.stock_depleted_at || null);
     setDraft({
       name: p.name, description: p.description, price: String(p.price), shippingFee: String(p.shipping_fee),
       stock: String(p.stock), tags: (p.tags || []).join(', '), images: p.images || [],
@@ -327,7 +344,7 @@ export default function ProductFormContent() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-primary" disabled={saving} onClick={saveProduct}>{saving ? 'กำลังบันทึก...' : editingId ? 'บันทึกการแก้ไข' : 'เพิ่มสินค้า'}</button>
-          {editingId && <button className="btn btn-outline" onClick={() => { setEditingId(null); setDraft(emptyDraft); router.push('/admin/products'); }}>ยกเลิก</button>}
+          {editingId && <button className="btn btn-outline" onClick={() => { setEditingId(null); setDraft(emptyDraft); setOriginalStock(null); setOriginalDepletedAt(null); router.push('/admin/products'); }}>ยกเลิก</button>}
         </div>
       </div>
     </div>

@@ -32,6 +32,7 @@ export default function AdminDashboardPage() {
   });
   const [endingSoonAuctions, setEndingSoonAuctions] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [eventBreakdown, setEventBreakdown] = useState<{ name: string; total: number }[]>([]);
 
   useEffect(() => { load(); }, []);
 
@@ -41,7 +42,7 @@ export default function AdminDashboardPage() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
     const [{ data: soldOrders }, { count: pendingCount }, { count: shipCount }, { count: outOfStockCount }, { data: activeAuctionsData }, { data: recent }] = await Promise.all([
-      supabase.from('orders').select('total, created_at').in('status', ['confirmed', 'shipping', 'received']).gte('created_at', startOfMonth),
+      supabase.from('orders').select('total, created_at, items').in('status', ['confirmed', 'shipping', 'received']).gte('created_at', startOfMonth),
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'confirmed'),
       supabase.from('products').select('*', { count: 'exact', head: true }).lte('stock', 0),
@@ -56,6 +57,31 @@ export default function AdminDashboardPage() {
     const activeAuctions = (activeAuctionsData || []).filter((a: any) => new Date(a.ends_at).getTime() > Date.now());
     const soon = activeAuctions.filter((a: any) => new Date(a.ends_at).getTime() - Date.now() < 24 * 3600 * 1000);
 
+    // sales-by-event breakdown, for this month's confirmed+ orders
+    const productIds = Array.from(new Set(
+      (soldOrders || []).flatMap((o: any) => (o.items || []).map((it: any) => it.productId).filter(Boolean))
+    )) as string[];
+    const eventNameByProduct: Record<string, string> = {};
+    if (productIds.length) {
+      const { data: prods } = await supabase.from('products').select('id, event_id').in('id', productIds);
+      const eventIds = Array.from(new Set((prods || []).map((p: any) => p.event_id).filter(Boolean))) as string[];
+      const catNameById: Record<string, string> = {};
+      if (eventIds.length) {
+        const { data: cats } = await supabase.from('categories').select('id, name').in('id', eventIds);
+        (cats || []).forEach((c: any) => { catNameById[c.id] = c.name; });
+      }
+      (prods || []).forEach((p: any) => { eventNameByProduct[p.id] = p.event_id ? (catNameById[p.event_id] || 'ไม่ทราบชื่ออีเว้นท์') : ''; });
+    }
+    const eventTotals: Record<string, number> = {};
+    for (const o of soldOrders || []) {
+      for (const it of (o as any).items || []) {
+        const revenue = Number(it.price) * Number(it.qty);
+        const label = !it.productId ? 'ประมูล / อื่นๆ' : (eventNameByProduct[it.productId] || 'ไม่มีอีเว้นท์');
+        eventTotals[label] = (eventTotals[label] || 0) + revenue;
+      }
+    }
+    const breakdown = Object.entries(eventTotals).sort((a, b) => b[1] - a[1]).map(([name, total]) => ({ name, total }));
+
     setStats({
       salesToday, salesMonth, ordersToday,
       pendingCount: pendingCount || 0, shipCount: shipCount || 0, outOfStockCount: outOfStockCount || 0,
@@ -63,6 +89,7 @@ export default function AdminDashboardPage() {
     });
     setEndingSoonAuctions(soon);
     setRecentOrders(recent || []);
+    setEventBreakdown(breakdown);
     setLoading(false);
   }
 
@@ -93,6 +120,26 @@ export default function AdminDashboardPage() {
               <span style={{ color: '#8a8378' }}>ปิด {new Date(a.ends_at).toLocaleString('th-TH')}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {eventBreakdown.length > 0 && (
+        <div className="card">
+          <h3 style={{ fontSize: 15 }}>ยอดขายแยกตามอีเว้นท์ (เดือนนี้)</h3>
+          {(() => {
+            const maxTotal = Math.max(...eventBreakdown.map((e) => e.total));
+            return eventBreakdown.map((e) => (
+              <div key={e.name} style={{ padding: '8px 0', borderBottom: '1px dashed var(--line)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, marginBottom: 5 }}>
+                  <span>{e.name}</span>
+                  <span style={{ fontWeight: 600 }}>฿{e.total.toLocaleString('th-TH')}</span>
+                </div>
+                <div style={{ background: 'var(--paper-dim)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                  <div style={{ width: `${maxTotal ? (e.total / maxTotal * 100) : 0}%`, background: 'var(--jade)', height: '100%' }} />
+                </div>
+              </div>
+            ));
+          })()}
         </div>
       )}
 

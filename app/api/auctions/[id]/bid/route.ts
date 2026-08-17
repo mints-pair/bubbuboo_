@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createAdminSupabase } from '@/lib/supabase/admin';
+import { sendAdminTelegramMessage } from '@/lib/telegram';
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const { amount, name, contact, sessionId } = await req.json().catch(() => ({}));
@@ -53,6 +54,10 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     bidder_session_id: sessionId,
     amount,
   });
+
+  await sendAdminTelegramMessage(
+    `มีการบิดใหม่\nรายการ: ${auction.name}\nราคาล่าสุด: ฿${Number(amount).toLocaleString('th-TH')}\nผู้บิด: ${name.trim()} (${contact.trim()})`
+  );
 
   return NextResponse.json({ ok: true, currentBid: amount });
 }

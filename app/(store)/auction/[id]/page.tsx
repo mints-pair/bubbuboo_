@@ -42,6 +42,13 @@ export default function AuctionDetailPage({ params }: { params: { id: string } }
     const { data: b } = await supabase.from('auction_bids').select('*').eq('auction_id', params.id).order('created_at', { ascending: false }).limit(30);
     setBids(b || []);
     setLoading(false);
+
+    if (a) {
+      const isEnded = new Date(a.ends_at).getTime() <= Date.now();
+      if (isEnded && a.status === 'active' && a.current_bid && !a.end_notified) {
+        fetch(`/api/auctions/${params.id}/notify-ended`, { method: 'POST' }).catch(() => {});
+      }
+    }
   }
 
   if (loading) return <div className="container" />;

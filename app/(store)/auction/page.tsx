@@ -75,6 +75,17 @@ export default function AuctionListPage() {
     });
 
     setAuctions(visible);
+
+    // opportunistically nudge the "ended, winner pending payment" alert for
+    // any auction that just crossed its end time — harmless if it fires
+    // more than once, the API route itself guards against duplicate sends
+    for (const a of withCounts) {
+      const isEnded = new Date(a.ends_at).getTime() <= Date.now();
+      if (isEnded && a.status === 'active' && a.current_bid && !a.end_notified) {
+        fetch(`/api/auctions/${a.id}/notify-ended`, { method: 'POST' }).catch(() => {});
+      }
+    }
+
     setLoading(false);
   }
 

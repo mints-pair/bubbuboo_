@@ -333,6 +333,7 @@ create table if not exists auctions (
   ends_at timestamptz not null,
   status text not null default 'active', -- 'active' | 'cancelled' | 'completed' (completed = winner paid, order created)
   order_number text references orders(order_number),
+  end_notified boolean not null default false,
   created_at timestamptz not null default now()
 );
 alter table auctions enable row level security;

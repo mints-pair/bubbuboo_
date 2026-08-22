@@ -28,6 +28,10 @@ export default function AdminAuctionsPage() {
   const [pickerQuery, setPickerQuery] = useState('');
   const [showPicker, setShowPicker] = useState(false);
   const [eventOptions, setEventOptions] = useState<any[]>([]);
+  const [closeTarget, setCloseTarget] = useState<any>(null);
+  const [closeForm, setCloseForm] = useState({ xAccount: '', name: '', address: '', phone: '', trackingCode: '', paymentMethod: 'qr' as 'qr' | 'wise' | 'truewallet', note: '' });
+  const [closing, setClosing] = useState(false);
+  const [closeError, setCloseError] = useState('');
 
   useEffect(() => {
     supabase.from('categories').select('*').eq('type', 'event').order('name', { ascending: true })
@@ -134,6 +138,40 @@ export default function AdminAuctionsPage() {
       endsAt: toLocalInputValue(a.ends_at), images: a.images || [], eventId: a.event_id || '',
     });
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function openCloseModal(a: any) {
+    setCloseTarget(a);
+    setCloseForm({ xAccount: '', name: a.current_bidder_name || '', address: '', phone: a.current_bidder_contact || '', trackingCode: '', paymentMethod: 'qr', note: '' });
+    setCloseError('');
+  }
+
+  async function submitAdminClose() {
+    if (!closeTarget) return;
+    if (!closeForm.xAccount || !closeForm.name || !closeForm.address || !closeForm.phone) { setCloseError('กรุณากรอกข้อมูลติดต่อ+ที่อยู่ให้ครบ'); return; }
+    if (!/^\d{6}$/.test(closeForm.trackingCode)) { setCloseError('รหัสติดตามต้องเป็นตัวเลข 6 หลัก'); return; }
+    setClosing(true);
+    setCloseError('');
+    try {
+      const res = await fetch(`/api/auctions/${closeTarget.id}/admin-close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contact: { xAccount: closeForm.xAccount, name: closeForm.name, address: closeForm.address, phone: closeForm.phone },
+          trackingCode: closeForm.trackingCode, paymentMethod: closeForm.paymentMethod, note: closeForm.note,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCloseError(data.error || 'เกิดข้อผิดพลาด'); return; }
+      logAdminAction(`ปิดประมูล "${closeTarget.name}" ด้วยตนเอง → ออเดอร์ ${data.orderNumber}`);
+      alert(`ปิดประมูลสำเร็จ — สร้างออเดอร์ ${data.orderNumber} แล้ว (สถานะ: รอจัดส่ง)`);
+      setCloseTarget(null);
+      load();
+    } catch (e: any) {
+      setCloseError(e.message || 'เกิดข้อผิดพลาด');
+    } finally {
+      setClosing(false);
+    }
   }
 
   async function cancelAuction(a: any) {
@@ -290,6 +328,11 @@ export default function AdminAuctionsPage() {
                   <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => toggleHistory(a)}>
                     {expandedId === a.id ? 'ซ่อนประวัติการบิด' : 'ดูประวัติการบิด'}
                   </button>
+                  {ended && a.status === 'active' && a.current_bid && (
+                    <button className="btn btn-primary btn-sm" style={{ padding: '6px 10px', fontSize: 12, background: 'var(--jade)' }} onClick={() => openCloseModal(a)}>
+                      ปิดประมูล (จ่ายเงินนอกเว็บ)
+                    </button>
+                  )}
                   {a.status === 'active' && (
                     <>
                       <button className="btn btn-outline btn-sm" style={{ padding: '6px 10px', fontSize: 12 }} onClick={() => startEdit(a)}>แก้ไข</button>
@@ -318,6 +361,49 @@ export default function AdminAuctionsPage() {
           })
         )}
       </div>
+
+      {closeTarget && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(58,50,42,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 90, padding: 16, overflowY: 'auto' }}>
+          <div className="card" style={{ maxWidth: 460, width: '100%', margin: '20px 0' }}>
+            <h3>ปิดประมูล "{closeTarget.name}"</h3>
+            <p style={{ color: '#8a8378', fontSize: 13.5 }}>
+              ใช้เมื่อผู้ชนะจ่ายเงินทางอื่นนอกเว็บ (เช่น ทักมาโอนตรง) — ระบบจะสร้างออเดอร์จริงให้ทันที สถานะ "รอจัดส่ง" (ข้ามขั้นตอนรอตรวจสลิป เพราะแอดมินยืนยันเองอยู่แล้ว)
+              ยอดที่ต้องชำระ: <b>฿{(Number(closeTarget.current_bid) + Number(closeTarget.shipping_fee || 0) + (closeForm.paymentMethod === 'truewallet' ? 20 : 0)).toLocaleString('th-TH')}</b>
+            </p>
+            <div className="field"><label>บัญชี X ของผู้ชนะ *</label>
+              <input value={closeForm.xAccount} onChange={(e) => setCloseForm({ ...closeForm, xAccount: e.target.value })} placeholder="@..." /></div>
+            <div className="field"><label>ชื่อ-นามสกุลผู้รับ *</label>
+              <input value={closeForm.name} onChange={(e) => setCloseForm({ ...closeForm, name: e.target.value })} /></div>
+            <div className="field"><label>ที่อยู่จัดส่ง *</label>
+              <textarea rows={3} value={closeForm.address} onChange={(e) => setCloseForm({ ...closeForm, address: e.target.value })} /></div>
+            <div className="field"><label>เบอร์โทรศัพท์ *</label>
+              <input value={closeForm.phone} onChange={(e) => setCloseForm({ ...closeForm, phone: e.target.value })} /></div>
+            <div className="field">
+              <label>ช่องทางที่จ่ายจริง</label>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={closeForm.paymentMethod === 'qr'} onChange={() => setCloseForm({ ...closeForm, paymentMethod: 'qr' })} /><span>QR</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={closeForm.paymentMethod === 'wise'} onChange={() => setCloseForm({ ...closeForm, paymentMethod: 'wise' })} /><span>Wise</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                  <input type="radio" checked={closeForm.paymentMethod === 'truewallet'} onChange={() => setCloseForm({ ...closeForm, paymentMethod: 'truewallet' })} /><span>TrueWallet (+฿20)</span>
+                </label>
+              </div>
+            </div>
+            <div className="field"><label>รหัสติดตามพัสดุ 6 หลัก *</label>
+              <input maxLength={6} value={closeForm.trackingCode} onChange={(e) => setCloseForm({ ...closeForm, trackingCode: e.target.value })} placeholder="ตั้งเอง หรือถามผู้ชนะ" /></div>
+            <div className="field"><label>หมายเหตุ (ไม่บังคับ)</label>
+              <input value={closeForm.note} onChange={(e) => setCloseForm({ ...closeForm, note: e.target.value })} placeholder="เช่น จ่ายผ่าน DM 12/8" /></div>
+            {closeError && <p style={{ color: 'var(--rose)' }}>{closeError}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" disabled={closing} onClick={submitAdminClose}>{closing ? 'กำลังบันทึก...' : 'ยืนยันปิดประมูล'}</button>
+              <button className="btn btn-outline" onClick={() => setCloseTarget(null)}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

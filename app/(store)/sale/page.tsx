@@ -34,7 +34,7 @@ export default function SalePage() {
 
   return (
     <div className="container">
-      <h1>ลดราคา</h1>
+      <h1>🏷️ ลดราคา</h1>
       {isPromotionLive(promo) && promo?.label && (
         <p style={{ color: 'var(--rose)', fontWeight: 600, marginTop: -6, marginBottom: 8 }}>{promo.label}</p>
       )}

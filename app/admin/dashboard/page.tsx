@@ -49,6 +49,7 @@ export default function AdminDashboardPage() {
   const [endingSoonAuctions, setEndingSoonAuctions] = useState<any[]>([]);
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [eventBreakdown, setEventBreakdown] = useState<{ name: string; total: number }[]>([]);
+  const [dailyBreakdown, setDailyBreakdown] = useState<{ date: string; total: number; count: number }[]>([]);
 
   useEffect(() => { load(); }, [selectedMonth]);
 
@@ -119,6 +120,19 @@ export default function AdminDashboardPage() {
     }
     const breakdown = Object.entries(eventTotals).sort((a, b) => b[1] - a[1]).map(([name, total]) => ({ name, total }));
 
+    // daily breakdown within the selected month — reuses the same monthOrders
+    // fetch, just grouped by calendar day instead of by event
+    const dailyTotals: Record<string, { total: number; count: number }> = {};
+    for (const o of monthOrders || []) {
+      const day = String(o.created_at).slice(0, 10);
+      if (!dailyTotals[day]) dailyTotals[day] = { total: 0, count: 0 };
+      dailyTotals[day].total += Number(o.total);
+      dailyTotals[day].count += 1;
+    }
+    const dailyList = Object.entries(dailyTotals)
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([date, v]) => ({ date, total: v.total, count: v.count }));
+
     setStats({
       salesToday, ordersToday, salesSelectedMonth,
       pendingCount: pendingCount || 0, shipCount: shipCount || 0, outOfStockCount: outOfStockCount || 0,
@@ -127,6 +141,7 @@ export default function AdminDashboardPage() {
     setEndingSoonAuctions(soon);
     setRecentOrders(recent || []);
     setEventBreakdown(breakdown);
+    setDailyBreakdown(dailyList);
     setLoading(false);
   }
 
@@ -190,6 +205,33 @@ export default function AdminDashboardPage() {
             </div>
           ));
         })()}
+      </div>
+
+      <div className="card">
+        <h3 style={{ fontSize: 15 }}>ยอดขายรายวัน ({selectedMonthLabel})</h3>
+        {dailyBreakdown.length === 0 ? (
+          <p style={{ color: '#9a9490' }}>ยังไม่มียอดขายในเดือนนี้</p>
+        ) : (
+          <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+            {(() => {
+              const maxTotal = Math.max(...dailyBreakdown.map((d) => d.total));
+              return dailyBreakdown.map((d) => (
+                <div key={d.date} style={{ padding: '8px 0', borderBottom: '1px dashed var(--line)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13.5, marginBottom: 5 }}>
+                    <span>{new Date(d.date + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', weekday: 'short' })}</span>
+                    <span>
+                      <span style={{ color: '#8a8378', marginRight: 8 }}>{d.count} ออเดอร์</span>
+                      <span style={{ fontWeight: 600 }}>฿{d.total.toLocaleString('th-TH')}</span>
+                    </span>
+                  </div>
+                  <div style={{ background: 'var(--paper-dim)', borderRadius: 99, height: 6, overflow: 'hidden' }}>
+                    <div style={{ width: `${maxTotal ? (d.total / maxTotal * 100) : 0}%`, background: 'var(--marigold)', height: '100%' }} />
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        )}
       </div>
 
       <div className="card">

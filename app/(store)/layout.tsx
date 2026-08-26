@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useLang } from '@/lib/lang-context';
 import ContactModal from '@/components/ContactModal';
 import LoginModal from '@/components/LoginModal';
+import AnnouncementPopup from '@/components/AnnouncementPopup';
 
 export default function StoreLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -109,6 +110,7 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
       </div>
 
       {contactOpen && <ContactModal onClose={() => setContactOpen(false)} />}
+      <AnnouncementPopup />
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
 
       {flashMessage && (

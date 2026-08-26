@@ -311,6 +311,28 @@ create policy "admin manage special areas" on special_shipping_areas
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- ============================================================
+-- ANNOUNCEMENT (single row) — popup shown to customers on their first
+-- visit each session, collapses into a small floating badge once dismissed.
+-- ============================================================
+create table if not exists announcement (
+  id int primary key default 1,
+  enabled boolean not null default false,
+  title text not null default '',
+  message text not null default '',
+  image_url text,
+  updated_at timestamptz not null default now(),
+  constraint single_row_announcement check (id = 1)
+);
+insert into announcement (id) values (1) on conflict (id) do nothing;
+alter table announcement enable row level security;
+
+create policy "public read announcement" on announcement
+  for select using (true);
+
+create policy "admin manage announcement" on announcement
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ============================================================
 -- AUCTIONS (English/open auction — everyone sees the current highest bid)
 -- Ending is NOT driven by a cron job — "ended" is simply derived from
 -- ends_at < now() wherever it's checked (bid API, storefront display).

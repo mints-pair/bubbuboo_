@@ -37,6 +37,10 @@ export default function CartPage() {
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [holdExpired, setHoldExpired] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [couponChecking, setCouponChecking] = useState(false);
+  const [couponError, setCouponError] = useState('');
 
   useEffect(() => {
     const c = getCart();
@@ -77,9 +81,36 @@ export default function CartPage() {
   const areaSurcharge = shippingArea === 'special' ? SPECIAL_AREA_SURCHARGE : 0;
   const shippingFee = baseShippingFee + areaSurcharge;
   const paymentSurcharge = paymentMethod === 'truewallet' ? TRUEWALLET_SURCHARGE : 0;
-  const total = subtotal + shippingFee + paymentSurcharge;
+  const couponDiscount = appliedCoupon?.discountAmount || 0;
+  const total = subtotal - couponDiscount + shippingFee + paymentSurcharge;
   const freeShipMin = promo?.free_shipping_min_amount || 0;
   const freeShipAmountAway = isFreeShippingEnabled(promo) && !freeShipLive && freeShipMin > 0 ? freeShipMin - subtotal : 0;
+
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setCouponChecking(true);
+    setCouponError('');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput, subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCouponError(data.error || t('cart.couponErrorGeneric')); return; }
+      setAppliedCoupon({ code: data.code, discountAmount: data.discountAmount });
+      setCouponInput('');
+    } catch {
+      setCouponError(t('cart.couponErrorGeneric'));
+    } finally {
+      setCouponChecking(false);
+    }
+  }
+
+  function removeCoupon() {
+    setAppliedCoupon(null);
+    setCouponError('');
+  }
 
   async function goToPayment() {
     if (!contact.xAccount || !contact.name || !contact.address || !contact.phone) {
@@ -146,6 +177,7 @@ export default function CartPage() {
           contact, trackingCode, slipImage: pub.publicUrl,
           sessionId: getCartSessionId(),
           paymentMethod, shippingArea,
+          couponCode: appliedCoupon?.code || null,
         }),
       });
       const data = await res.json();
@@ -278,6 +310,35 @@ export default function CartPage() {
               );
             })}
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0' }}><span>{t('cart.subtotal')}</span><span>฿{subtotal.toLocaleString('th-TH')}</span></div>
+
+            <div style={{ padding: '8px 0', borderTop: '1px dashed var(--line)', borderBottom: '1px dashed var(--line)', margin: '4px 0' }}>
+              {appliedCoupon ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13.5, color: 'var(--jade)', fontWeight: 600 }}>🏷️ {appliedCoupon.code}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ color: 'var(--jade)', fontWeight: 600 }}>-฿{couponDiscount.toLocaleString('th-TH')}</span>
+                    <button onClick={removeCoupon} style={{ background: 'none', border: 'none', color: 'var(--rose)', fontSize: 12.5, textDecoration: 'underline', cursor: 'pointer' }}>{t('cart.couponRemove')}</button>
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
+                      placeholder={t('cart.couponPlaceholder')}
+                      style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--line)', fontSize: 13.5 }}
+                    />
+                    <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: 13 }} disabled={couponChecking} onClick={applyCoupon}>
+                      {couponChecking ? t('cart.couponChecking') : t('cart.couponApply')}
+                    </button>
+                  </div>
+                  {couponError && <p style={{ color: 'var(--rose)', fontSize: 12.5, marginTop: 6, marginBottom: 0 }}>{couponError}</p>}
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
               <span>{t('cart.shippingFee')}</span>
               <span>

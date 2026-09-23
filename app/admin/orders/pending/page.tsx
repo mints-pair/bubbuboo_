@@ -67,6 +67,11 @@ export default function PendingConfirmPage() {
             <span style={{ fontSize: 12.5, background: o.shipping_area === 'special' ? '#F3E0DC' : 'var(--paper-dim)', color: o.shipping_area === 'special' ? 'var(--rose)' : 'inherit', padding: '3px 10px', borderRadius: 99 }}>
               พื้นที่: {o.shipping_area === 'special' ? 'พิเศษ (+฿20)' : 'ปกติ'}
             </span>
+            {o.discount_code && (
+              <span style={{ fontSize: 12.5, background: 'var(--jade-light)', color: 'var(--jade)', padding: '3px 10px', borderRadius: 99, fontWeight: 700 }}>
+                🏷️ {o.discount_code} (-฿{Number(o.discount_amount).toLocaleString('th-TH')})
+              </span>
+            )}
           </div>
           <div>ผู้ติดต่อ: {o.contact.name} · {o.contact.phone}</div>
           <div style={{ color: '#8a8378', marginBottom: 8 }}>ที่อยู่: {o.contact.address} | X: {o.contact.xAccount}</div>

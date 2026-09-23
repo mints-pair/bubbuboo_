@@ -385,3 +385,30 @@ create policy "public read bids" on auction_bids
 
 create policy "admin manage bids" on auction_bids
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ============================================================
+-- COUPONS (code-based discounts, separate from the automatic storewide
+-- promotion system). No public read policy — codes are only checked via
+-- the /api/coupons/validate route (service role), so customers can't
+-- browse/discover other codes directly through the client.
+-- ============================================================
+create table if not exists coupons (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  discount_type text not null default 'percent' check (discount_type in ('percent', 'fixed')),
+  discount_value numeric not null default 0,
+  min_order_amount numeric not null default 0,
+  max_uses int,
+  used_count int not null default 0,
+  active boolean not null default true,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table coupons enable row level security;
+
+create policy "admin manage coupons" on coupons
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+alter table orders add column if not exists discount_code text;
+alter table orders add column if not exists discount_amount numeric not null default 0;

@@ -54,6 +54,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     { href: '/admin/orders/cancelled', label: 'ออเดอร์ที่ถูกปฏิเสธ' },
     { href: '/admin/members', label: 'ระบบสมาชิก' },
     { href: '/admin/promotion', label: 'โปรโมชั่น' },
+    { href: '/admin/coupons', label: 'โค้ดส่วนลด' },
     { href: '/admin/special-areas', label: 'พื้นที่ขนส่งพิเศษ' },
     { href: '/admin/announcement', label: 'ประกาศหน้าร้าน' },
     { href: '/admin/settings', label: 'ตั้งค่าร้าน' },

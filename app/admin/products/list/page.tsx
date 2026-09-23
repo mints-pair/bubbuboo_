@@ -20,6 +20,9 @@ export default function AdminProductsListPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [optProgress, setOptProgress] = useState({ done: 0, total: 0 });
   const [optResult, setOptResult] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkShippingFee, setBulkShippingFee] = useState('');
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   const members = categories.filter((c) => c.type === 'member' && (!marketFilter || c.market === marketFilter));
   const events = categories.filter((c) => c.type === 'event' && (!marketFilter || c.market === marketFilter));
@@ -169,6 +172,37 @@ export default function AdminProductsListPage() {
     load();
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllFiltered(filteredList: any[]) {
+    setSelectedIds((prev) => {
+      const allSelected = filteredList.length > 0 && filteredList.every((p) => prev.has(p.id));
+      if (allSelected) return new Set();
+      return new Set(filteredList.map((p) => p.id));
+    });
+  }
+
+  async function applyBulkShippingFee() {
+    const fee = Number(bulkShippingFee);
+    if (bulkShippingFee === '' || isNaN(fee) || fee < 0) { alert('กรุณาใส่ค่าส่งเป็นตัวเลขที่ถูกต้อง (0 ขึ้นไป)'); return; }
+    if (selectedIds.size === 0) { alert('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ'); return; }
+    if (!confirm(`ตั้งค่าส่งเป็น ฿${fee} ให้สินค้าที่เลือกไว้ทั้งหมด ${selectedIds.size} รายการ?`)) return;
+    setBulkSaving(true);
+    const ids = Array.from(selectedIds);
+    await supabase.from('products').update({ shipping_fee: fee }).in('id', ids);
+    logAdminAction(`อัปเดตค่าส่งเป็น ฿${fee} ให้สินค้า ${ids.length} รายการพร้อมกัน`);
+    setBulkSaving(false);
+    setBulkShippingFee('');
+    setSelectedIds(new Set());
+    load();
+  }
+
   function nameOf(id: string | null) {
     return categories.find((c) => c.id === id)?.name || '-';
   }
@@ -262,12 +296,38 @@ export default function AdminProductsListPage() {
           )}
         </div>
 
+        {selectedIds.size > 0 && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', background: 'var(--jade-light)', borderRadius: 9, padding: '10px 12px', marginBottom: 14 }}>
+            <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--jade)' }}>เลือกไว้ {selectedIds.size} รายการ</span>
+            <input
+              type="number"
+              min={0}
+              value={bulkShippingFee}
+              onChange={(e) => setBulkShippingFee(e.target.value)}
+              placeholder="ค่าส่งใหม่ (บาท)"
+              style={{ width: 140, padding: '8px 10px', borderRadius: 7, border: '1.5px solid var(--line)', fontSize: 13.5 }}
+            />
+            <button className="btn btn-primary" style={{ padding: '8px 14px', fontSize: 13 }} disabled={bulkSaving} onClick={applyBulkShippingFee}>
+              {bulkSaving ? 'กำลังบันทึก...' : 'อัปเดตค่าส่งที่เลือก'}
+            </button>
+            <button className="btn btn-outline" style={{ padding: '8px 14px', fontSize: 13 }} onClick={() => setSelectedIds(new Set())}>ยกเลิกการเลือก</button>
+          </div>
+        )}
+
         {loading ? null : filtered.length === 0 ? (
           <p style={{ color: '#9a9490' }}>ไม่พบสินค้า</p>
         ) : (
           <div className="table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
               <thead><tr style={{ textAlign: 'left', color: '#8a8378' }}>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && filtered.every((p) => selectedIds.has(p.id))}
+                    onChange={() => toggleSelectAllFiltered(filtered)}
+                    style={{ width: 16, height: 16 }}
+                  />
+                </th>
                 <th></th><th></th><th>ชื่อ</th><th>ตลาด</th><th>เมมเบอร์</th><th>อีเว้นท์</th><th>ราคา</th><th>คงเหลือ</th><th>จองอยู่</th><th></th>
               </tr></thead>
               <tbody>
@@ -276,6 +336,14 @@ export default function AdminProductsListPage() {
                   const reservedQty = reservedHeldMap[p.id] || 0;
                   return (
                     <tr key={p.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(p.id)}
+                          onChange={() => toggleSelect(p.id)}
+                          style={{ width: 16, height: 16 }}
+                        />
+                      </td>
                       <td>
                         <button
                           onClick={() => toggleFeatured(p)}

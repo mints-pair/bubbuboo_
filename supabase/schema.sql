@@ -412,3 +412,26 @@ create policy "admin manage coupons" on coupons
 
 alter table orders add column if not exists discount_code text;
 alter table orders add column if not exists discount_amount numeric not null default 0;
+
+-- ============================================================
+-- ANNOUNCEMENTS (multi-row — replaces the old single-row `announcement`
+-- table, which is left in place unused rather than dropped, to avoid any
+-- migration risk). Customers page through all enabled ones in one popup.
+-- ============================================================
+create table if not exists announcements (
+  id uuid primary key default gen_random_uuid(),
+  enabled boolean not null default true,
+  title text not null default '',
+  message text not null default '',
+  image_url text,
+  sort_order int not null default 0,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+alter table announcements enable row level security;
+
+create policy "public read announcements" on announcements
+  for select using (true);
+
+create policy "admin manage announcements" on announcements
+  for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

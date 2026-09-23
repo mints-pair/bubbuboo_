@@ -2,34 +2,48 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const DISMISS_KEY = 'shop_announcement_dismissed_at';
+const DISMISS_KEY = 'shop_announcements_dismissed_v1';
 
 export default function AnnouncementPopup() {
   const supabase = createClient();
-  const [announcement, setAnnouncement] = useState<any>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const [showBadge, setShowBadge] = useState(false);
 
   useEffect(() => {
-    supabase.from('announcement').select('*').single().then(({ data }) => {
-      if (!data || !data.enabled) return;
-      setAnnouncement(data);
-      const dismissedAt = sessionStorage.getItem(DISMISS_KEY);
-      if (dismissedAt === data.updated_at) {
-        setShowBadge(true); // already saw this exact announcement this session
-      } else {
-        setOpen(true);
-      }
-    });
+    supabase.from('announcements').select('*').eq('enabled', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false })
+      .then(({ data }) => {
+        const list = data || [];
+        if (list.length === 0) return;
+        setItems(list);
+        const key = JSON.stringify(list.map((a: any) => ({ id: a.id, updated_at: a.updated_at })));
+        const dismissedKey = sessionStorage.getItem(DISMISS_KEY);
+        if (dismissedKey === key) {
+          setShowBadge(true); // already saw this exact set this session
+        } else {
+          setIndex(0);
+          setOpen(true);
+        }
+      });
   }, []);
 
   function close() {
     setOpen(false);
     setShowBadge(true);
-    if (announcement) sessionStorage.setItem(DISMISS_KEY, announcement.updated_at);
+    if (items.length) {
+      const key = JSON.stringify(items.map((a) => ({ id: a.id, updated_at: a.updated_at })));
+      sessionStorage.setItem(DISMISS_KEY, key);
+    }
   }
 
-  if (!announcement) return null;
+  function reopen() {
+    setIndex(0);
+    setOpen(true);
+  }
+
+  if (items.length === 0) return null;
+  const current = items[index];
 
   return (
     <>
@@ -48,20 +62,42 @@ export default function AnnouncementPopup() {
             >
               ×
             </button>
-            {announcement.image_url && (
-              <img src={announcement.image_url} style={{ width: '100%', borderRadius: 10, marginBottom: 14 }} />
+
+            {current.image_url && (
+              <img src={current.image_url} style={{ width: '100%', borderRadius: 10, marginBottom: 14 }} />
             )}
-            {announcement.title && <h3 style={{ marginTop: 0 }}>{announcement.title}</h3>}
-            {announcement.message && <p style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#5a5257' }}>{announcement.message}</p>}
-            <button className="btn btn-primary" onClick={close}>ปิด</button>
+            {current.title && <h3 style={{ marginTop: 0 }}>{current.title}</h3>}
+            {current.message && <p style={{ fontSize: 14.5, lineHeight: 1.7, whiteSpace: 'pre-wrap', color: '#5a5257' }}>{current.message}</p>}
+
+            {items.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 6, margin: '4px 0 14px' }}>
+                {items.map((_, i) => (
+                  <span key={i} onClick={() => setIndex(i)} style={{
+                    width: 7, height: 7, borderRadius: '50%', cursor: 'pointer',
+                    background: i === index ? 'var(--plum)' : 'var(--line)',
+                  }} />
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              {items.length > 1 && index > 0 && (
+                <button className="btn btn-outline" onClick={() => setIndex((i) => i - 1)}>← ก่อนหน้า</button>
+              )}
+              {items.length > 1 && index < items.length - 1 ? (
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setIndex((i) => i + 1)}>ถัดไป →</button>
+              ) : (
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={close}>ปิด</button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {showBadge && !open && (
         <button
-          onClick={() => setOpen(true)}
-          title={announcement.title || 'ประกาศ'}
+          onClick={reopen}
+          title="ประกาศ"
           style={{
             position: 'fixed', bottom: 24, right: 24, zIndex: 90,
             width: 52, height: 52, borderRadius: '50%', border: 'none',
